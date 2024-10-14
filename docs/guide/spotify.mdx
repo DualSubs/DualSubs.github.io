@@ -1,0 +1,66 @@
+import { ModuleInstall } from "@theme";
+import _Footer from "./_Footer.md";
+
+# 🎵 Spotify
+
+## 简介
+  * 翻译歌词功能：详见[🍿 DualSubs: 🔣 Universal#简介](./universal#简介)
+  * 外部歌词功能：自动为无歌词的歌曲补全歌词，来源为用户自选的第三方音乐API（默认为 `网易云音乐`）
+
+## 功能列表
+  * 翻译歌词功能：详见[🍿 DualSubs: 🔣 Universal#功能列表](./universal#功能列表)
+  * 外部歌词功能：在第三方平台上检索对应的歌曲歌词，转换为Spotify格式并输出
+    * 网易云音乐（官方，支持逐字歌词）
+    * 网易云音乐 Node.js API（支持逐字歌词）
+    * QQ 音乐（官方）
+
+## 使用说明
+  * 开箱即用
+  * App: 拥有歌词的歌曲，点击歌词面板右上角的`翻译`按钮即可显示双语歌词
+  * Web: 拥有歌词的歌曲，歌词直接显示为双语
+
+## 安装链接
+### 歌词双语翻译与补全
+* ⚠️ 不含`播客语音转译文本翻译`，如需要请安装独立模块
+
+<ModuleInstall urlPrefix="https://github.com/DualSubs/Spotify/raw/main/modules/">
+  <ModuleInstall.Tab type="loon">
+    <ModuleInstall.Item url="DualSubs.Spotify.plugin"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="surge">
+    <ModuleInstall.Item url="DualSubs.Spotify.sgmodule" badge={<>完整支持需要 iOS 5.21.0 (3021) 或 macOS 5.4.4 (2551) 及以上版本</>} />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="stash">
+    <ModuleInstall.Item url="DualSubs.Spotify.stoverride"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="egern">
+    <ModuleInstall.Item url="DualSubs.Spotify.yaml"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="qx">
+    <ModuleInstall.Item url="DualSubs.Spotify.snippet" badge={<>完整支持需要 1.5.0 (824) 及以上版本</>}>
+      - ⚠️ 1.4.x 仅支持`翻译器`翻译歌词，不支持`外部源`歌词检索功能
+    </ModuleInstall.Item>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="shadowrocket">
+    <ModuleInstall.Item url="DualSubs.Spotify.srmodule" badge={<>需要 2.2.45 (2165) 及以上版本</>} />
+  </ModuleInstall.Tab>
+</ModuleInstall>
+
+### 🆕播客语音转译文本翻译
+* ⚠️ 转译文本量巨大，30分钟播客文本量相当于一部3小时的电影，强烈建议使用`Microsoft Translate`或其他付费API进行翻译，否则大概率会造成请求失败
+
+<ModuleInstall
+  urlPrefix="https://github.com/DualSubs/Spotify/raw/main/modules/"
+  urls={{
+    loon: "DualSubs.Spotify.Transcripts.plugin",
+    surge: "DualSubs.Spotify.Transcripts.sgmodule",
+    qx: "DualSubs.Spotify.Transcripts.snippet",
+    stash: "DualSubs.Spotify.Transcripts.stoverride",
+    shadowrocket: "DualSubs.Spotify.Transcripts.srmodule"
+  }}
+/>
+
+## 更新日志
+  * 翻译功能：详见[🍿 DualSubs: 🔣 Universal#更新日志](./universal#更新日志)
+
+<_Footer />

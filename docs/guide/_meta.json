@@ -1,0 +1,13 @@
+[
+    {
+        "type": "file",
+        "name": "index",
+        "label": "预览"
+    },
+    "universal",
+    "netflix",
+    "youtube",
+    "spotify",
+    "addon",
+    "box-js"
+]

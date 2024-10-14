@@ -1,0 +1,63 @@
+import { ModuleInstall } from "@theme";
+import _Footer from "./_Footer.md";
+
+# ➕ AddOn
+
+## 简介
+* Microsoft Translate
+  * Microsoft Translate 为免费翻译器，可以直连使用，Token有效期为十分钟
+  * 启用后，每十分钟自动更新并填写Token，同时会将翻译器自动切换为Microsoft Translate（以免除tvOS用户操作）
+* Akamaized
+  * 提供 Akamaized.net 流媒体解决方案的字幕翻译
+
+## 功能列表
+* Microsoft Translate
+  * 每十分钟自动更新并填写Token
+  * 将翻译器自动切换为Microsoft Translate
+* Akamaized
+  * 对于 `https://*.akamaized.net/out/v1/${hash}.m3u8` 的直播流地址进行字幕翻译
+
+## 使用说明
+* Microsoft Translate
+  * 安装后，等待每10分钟自动运行，首次使用需等待10分钟第一次刷新
+* Akamaized
+  * 详见[🍿 DualSubs: 🔣 Universal#使用说明](./universal#使用说明)
+
+## 安装链接
+### Microsoft Translate
+<ModuleInstall urlPrefix="https://github.com/DualSubs/AddOn/raw/main/modules/">
+  <ModuleInstall.Tab type="loon">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.plugin"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="surge">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.sgmodule"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="stash">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.stoverride"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="egern">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.yaml"/>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="qx">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.snippet">
+      - 修改配置文件，在`[task_local]`段添加如下内容:
+      - ```*/10 * * * * https://github.com/DualSubs/AddOn/raw/main/js/AddOn.Microsoft.Translate.js, tag=🍿️ DualSubs: ➕ AddOn (Microsoft Translate), img-url=https://github.com/Koolson/Qure/raw/master/IconSet/Color/Microsoft.png, enabled=true```
+    </ModuleInstall.Item>
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="shadowrocket">
+    <ModuleInstall.Item url="DualSubs.AddOn.Microsoft.Translate.srmodule"/>
+  </ModuleInstall.Tab>
+</ModuleInstall>
+
+### Akamaized
+<ModuleInstall
+  urlPrefix="https://github.com/DualSubs/AddOn/raw/main/modules/"
+  urls={{
+    surge: "DualSubs.AddOn.Akamaized.sgmodule",
+  }}
+/>
+
+## 更新日志
+### Microsoft Translate
+### Akamaized
+<_Footer />

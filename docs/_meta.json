@@ -1,0 +1,17 @@
+[
+    {
+        "text": "文档",
+        "link": "/guide/index",
+        "activeMatch": "^/guide/"
+    },
+    {
+        "text": "更新日志",
+        "link": "/changelog/universal",
+        "activeMatch": "^/changelog/"
+    },
+    {
+        "text": "论坛",
+        "link": "https://github.com/orgs/DualSubs/discussions",
+        "activeMatch": "^/discussions/"
+    }
+]
