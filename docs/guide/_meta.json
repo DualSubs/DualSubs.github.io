@@ -5,9 +5,9 @@
         "label": "预览"
     },
     "universal",
-    "netflix",
     "youtube",
     "spotify",
+    "netflix",
     "addon",
     "box-js"
 ]
