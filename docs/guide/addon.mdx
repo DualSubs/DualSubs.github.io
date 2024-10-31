@@ -27,25 +27,25 @@ import _Footer from "./_Footer.md";
 ### Microsoft Translate
 <ModuleInstall urlPrefix="https://github.com/DualSubs/AddOn/releases/latest/download/">
   <ModuleInstall.Tab type="loon">
-    <ModuleInstall.Item url="Microsoft.Translate.plugin"/>
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.plugin"/>
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="surge">
-    <ModuleInstall.Item url="Microsoft.Translate.sgmodule"/>
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.sgmodule"/>
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="stash">
-    <ModuleInstall.Item url="Microsoft.Translate.stoverride"/>
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.stoverride"/>
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="egern">
-    <ModuleInstall.Item url="Microsoft.Translate.yaml"/>
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.yaml"/>
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="qx">
-    <ModuleInstall.Item url="Microsoft.Translate.snippet">
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.snippet">
       - 修改配置文件，在`[task_local]`段添加如下内容:
-      - ```*/10 * * * * https://github.com/DualSubs/AddOn/releases/latest/download/Microsoft.Translate.bundle.js, tag=🍿️ DualSubs: ➕ AddOn (Microsoft Translate), img-url=https://github.com/Koolson/Qure/raw/master/IconSet/Color/Microsoft.png, enabled=true```
+      - ```*/10 * * * * https://github.com/DualSubs/AddOn/releases/latest/download/DualSubs.AddOn.MicrosoftTranslate.bundle.js, tag=🍿️ DualSubs: ➕ AddOn (Microsoft Translate), img-url=https://github.com/Koolson/Qure/raw/master/IconSet/Color/Microsoft.png, enabled=true```
     </ModuleInstall.Item>
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="shadowrocket">
-    <ModuleInstall.Item url="Microsoft.Translate.srmodule"/>
+    <ModuleInstall.Item url="DualSubs.AddOn.MicrosoftTranslate.srmodule"/>
   </ModuleInstall.Tab>
 </ModuleInstall>
 
@@ -53,7 +53,12 @@ import _Footer from "./_Footer.md";
 <ModuleInstall
   urlPrefix="https://github.com/DualSubs/AddOn/raw/main/modules/"
   urls={{
-    surge: "Akamaized.sgmodule",
+    loon: "DualSubs.AddOn.Akamaized.plugin",
+    surge: "DualSubs.AddOn.Akamaized.sgmodule",
+    stash: "DualSubs.AddOn.Akamaized.stoverride",
+    egern: "DualSubs.AddOn.Akamaized.yaml",
+    qx: "DualSubs.AddOn.Akamaized.snippet",
+    shadowrocket: "DualSubs.AddOn.Akamaized.srmodule"
   }}
 />
 
