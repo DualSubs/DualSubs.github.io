@@ -45,17 +45,100 @@ import _Footer from "./_Footer.md";
 详见[🍿 DualSubs: 🔣 Universal#功能列表](./universal#功能列表)
 
 ## 安装链接
-<ModuleInstall
-  urlPrefix="https://github.com/DualSubs/Netflix/releases/latest/download/"
-  urls={{
-    loon: "DualSubs.Netflix.plugin",
-    surge: "DualSubs.Netflix.sgmodule",
-    stash: "DualSubs.Netflix.stoverride",
-    egern: "DualSubs.Netflix.yaml",
-    qx: "DualSubs.Netflix.snippet",
-    shadowrocket: "DualSubs.Netflix.srmodule"
-  }}
-/>
+
+<ModuleInstall urlPrefix="https://github.com/DualSubs/Netflix/releases/latest/download/">
+  <ModuleInstall.Tab type="loon">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.plugin"
+      badge={[
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="surge">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.sgmodule"
+      badge={[
+        {
+          type: "danger",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "warning",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="stash">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.stoverride"
+      badge={[
+        {
+          type: "info",
+          text: "覆写",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="egern">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.yaml"
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="qx">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.snippet"
+      badge={[
+        {
+          type: "danger",
+          text: "重写",
+          outline: true,
+        },
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="shadowrocket">
+    <ModuleInstall.Item
+      url="DualSubs.Netflix.srmodule"
+      badge={[
+        {
+          type: "tip",
+          text: "HTTPS 解密",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+</ModuleInstall>
+
 ## 更新日志
 详见[🍿 DualSubs: 🔣 Universal#更新日志](./universal#更新日志)
 

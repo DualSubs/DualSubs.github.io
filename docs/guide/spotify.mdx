@@ -44,19 +44,90 @@ import _Footer from "./_Footer.md";
 
 <ModuleInstall urlPrefix="https://github.com/DualSubs/Spotify/releases/latest/download/">
   <ModuleInstall.Tab type="loon">
-    <ModuleInstall.Item url="DualSubs.Spotify.plugin"/>
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.plugin"
+      badge={[
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="surge">
-    <ModuleInstall.Item url="DualSubs.Spotify.sgmodule" badge={<>完整支持需要 iOS 5.21.0 (3021) 或 macOS 5.4.4 (2551) 及以上版本</>} />
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.sgmodule"
+      badge={[
+        {
+          type: "danger",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "warning",
+          text: "脚本",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "完整支持需要 iOS 5.21.0 (3021) 或 macOS 5.4.4 (2551) 及以上版本",
+        },
+      ]}
+    />
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="stash">
-    <ModuleInstall.Item url="DualSubs.Spotify.stoverride"/>
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.stoverride"
+      badge={[
+        {
+          type: "info",
+          text: "覆写",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="egern">
-    <ModuleInstall.Item url="DualSubs.Spotify.yaml"/>
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.yaml"
+    />
   </ModuleInstall.Tab>
   <ModuleInstall.Tab type="qx">
-    <ModuleInstall.Item url="DualSubs.Spotify.snippet" badge={<>完整支持需要 1.5.0 (824) 及以上版本</>}>
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.snippet"
+      badge={[
+        {
+          type: "danger",
+          text: "重写",
+          outline: true,
+        },
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "完整支持需要 1.5.0 (824) 及以上版本",
+        },
+      ]}
+    >
       - ⚠️ 1.4.x 仅支持`翻译器`翻译歌词，不支持`外部源`歌词检索功能
     </ModuleInstall.Item>
   </ModuleInstall.Tab>
@@ -65,16 +136,81 @@ import _Footer from "./_Footer.md";
 ### 🆕播客语音转译文本翻译
 * ⚠️ 转译文本量巨大，30分钟播客文本量相当于一部3小时的电影，强烈建议使用`Microsoft Translate`或其他付费API进行翻译，否则大概率会造成请求失败
 
-<ModuleInstall
-  urlPrefix="https://github.com/DualSubs/Spotify/raw/main/modules/"
-  urls={{
-    loon: "DualSubs.Spotify.Transcripts.plugin",
-    surge: "DualSubs.Spotify.Transcripts.sgmodule",
-    qx: "DualSubs.Spotify.Transcripts.snippet",
-    stash: "DualSubs.Spotify.Transcripts.stoverride",
-    shadowrocket: "DualSubs.Spotify.Transcripts.srmodule"
-  }}
-/>
+<ModuleInstall urlPrefix="https://github.com/DualSubs/Spotify/raw/main/modules/">
+  <ModuleInstall.Tab type="loon">
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.Transcripts.plugin"
+      badge={[
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="surge">
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.Transcripts.sgmodule"
+      badge={[
+        {
+          type: "danger",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "warning",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="stash">
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.Transcripts.stoverride"
+      badge={[
+        {
+          type: "info",
+          text: "覆写",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "MitM",
+          outline: true,
+        },
+        {
+          type: "info",
+          text: "脚本",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+  <ModuleInstall.Tab type="qx">
+    <ModuleInstall.Item
+      url="DualSubs.Spotify.Transcripts.snippet"
+      badge={[
+        {
+          type: "danger",
+          text: "重写",
+          outline: true,
+        },
+        {
+          type: "tip",
+          text: "MitM",
+          outline: true,
+        },
+      ]}
+    />
+  </ModuleInstall.Tab>
+</ModuleInstall>
 
 ## 更新日志
   * 翻译功能：详见[🍿 DualSubs: 🔣 Universal#更新日志](./universal#更新日志)
