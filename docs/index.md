@@ -24,37 +24,37 @@ hero:
 features:
     - icon: 🔣
       title: Universal
-      details: <span class="features-details" align="center">为支持的 HLS 平台添加双语字幕选项</span>
+      details: <div class="text-center">为支持的 HLS 平台添加双语字幕选项</div>
       span: 4
       link: /guide/universal
 
     - icon: ▶️
       title: YouTube (Music)
-      details: <span class="features-details" align="center">为 YouTube 的`字幕(自动翻译)`解锁全语言选项<br>为 YouTube 添加双语字幕支持<br>为 YouTube Music 添加双语翻译歌词</span>
+      details: <div class="text-center">为 YouTube 的`字幕(自动翻译)`解锁全语言选项<br>为 YouTube 添加双语字幕支持<br>为 YouTube Music 添加双语翻译歌词</div>
       span: 4
       link: /guide/youtube
 
     - icon: 🎵
       title: Spotify
-      details: <span class="features-details" align="center">为 Spotify 提供`歌词翻译`及`外部歌词`补全功能</span>
+      details: <div class="text-center">为 Spotify 提供`歌词翻译`及`外部歌词`补全功能</div>
       span: 4
       link: /guide/spotify
 
     - icon: 🇳
       title: Netflix
-      details: <span class="features-details" align="center">为 Netflix 添加双语`翻译字幕`</span>
+      details: <div class="text-center">为 Netflix 添加双语`翻译字幕`</div>
       span: 4
       link: /guide/netflix
 
     - icon: ➕
       title: AddOn
-      details: <span class="features-details" align="center">自动更新 Microsoft Translate Token<br>为 Akamaized.net 流媒体解决方案提供双语字幕选项</span>
+      details: <div class="text-center">自动更新 Microsoft Translate Token<br>为 Akamaized.net 流媒体解决方案提供双语字幕选项</div>
       span: 4
       link: /guide/addon
 
     - icon: 🧰
       title: BoxJs
-      details: <span class="features-details" align="center">可视化配置面板</span>
+      details: <div class="text-center">可视化配置面板</div>
       span: 4
       link: /guide/box-js
 ---
