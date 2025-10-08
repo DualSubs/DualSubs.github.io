@@ -8,18 +8,18 @@
     "preview": "rspress preview"
   },
   "dependencies": {
-    "@iringo/doc-ui": "^2.0.2",
+    "@iringo/doc-ui": "^2.4.1",
     "remark-github": "^12.0.0",
-    "rspress": "^1.37.2",
+    "rspress": "^1.45.6",
     "rspress-plugin-changelog": "^1.1.2",
-    "rspress-plugin-sitemap": "^1.1.1"
+    "rspress-plugin-sitemap": "^1.2.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@rspress/shared": "^1.37.4",
-    "@types/node": "^16.18.121",
-    "@types/react": "^18.3.11",
-    "typescript": "^5.7.2"
+    "@rspress/shared": "^1.45.6",
+    "@types/node": "^16.18.126",
+    "@types/react": "^18.3.26",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",
