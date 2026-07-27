@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@nsnanocat/doc-ui':
-        specifier: ^2.4.4
-        version: 2.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^2.4.5
+        version: 2.4.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       remark-github:
         specifier: ^12.0.0
         version: 12.0.0
@@ -185,8 +185,8 @@ packages:
   '@module-federation/webpack-bundler-runtime@0.14.0':
     resolution: {integrity: sha512-POWS6cKBicAAQ3DNY5X7XEUSfOfUsRaBNxbuwEfSGlrkTE9UcWheO06QP2ndHi8tHQuUKcIHi2navhPkJ+k5xg==}
 
-  '@nsnanocat/doc-ui@2.4.4':
-    resolution: {integrity: sha512-QAcWUTnroMp39Zq93IcZ1EiIwSiXRVn8SF75aGItNVvk3+AZz+xr5Ajq/mIIkxlQD7UktSDnsIYtdtbH+2MR6Q==, tarball: https://npm.pkg.github.com/download/@nsnanocat/doc-ui/2.4.4/908725be6df385d6ceb5c599b8c90e38c2f9d298}
+  '@nsnanocat/doc-ui@2.4.5':
+    resolution: {integrity: sha512-NMJVrcdZRMER0yW6xP/dseEEkYRdJhK6vRSzgcCpWiWA96Le35l5vFt5URTwEvPXZXHRZIWSWjvXUmS39YaN3w==, tarball: https://npm.pkg.github.com/download/@nsnanocat/doc-ui/2.4.5/098f712cbe61277bf50ae6f2adb56e40ee6c249b}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.3.1 <20'
@@ -2091,7 +2091,7 @@ snapshots:
       '@module-federation/runtime': 0.14.0
       '@module-federation/sdk': 0.14.0
 
-  '@nsnanocat/doc-ui@2.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@nsnanocat/doc-ui@2.4.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@rc-component/qrcode': 1.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-tooltip: 6.4.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
