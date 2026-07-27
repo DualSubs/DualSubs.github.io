@@ -1,0 +1,27 @@
+[
+  {
+    "type": "custom-link",
+    "label": "🎦 Universal",
+    "link": "/changelog/universal"
+  },
+  {
+    "type": "custom-link",
+    "label": "🇳 Netflix",
+    "link": "/changelog/netflix"
+  },
+  {
+    "type": "custom-link",
+    "label": "▶️ YouTube (Music)",
+    "link": "/changelog/youtube"
+  },
+  {
+    "type": "custom-link",
+    "label": "🎵 Spotify",
+    "link": "/changelog/spotify"
+  },
+  {
+    "type": "custom-link",
+    "label": "➕ AddOn",
+    "link": "/changelog/addon"
+  }
+]

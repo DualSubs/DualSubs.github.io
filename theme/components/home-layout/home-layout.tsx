@@ -1,4 +1,4 @@
-import Theme from 'rspress/theme';
+import { HomeLayout as RspressHomeLayout } from '@rspress/core/theme-original';
 import './home-layout.css';
 
-export const HomeLayout = () => <Theme.HomeLayout />;
+export const HomeLayout = () => <RspressHomeLayout />;

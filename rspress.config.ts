@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pluginSass } from '@rsbuild/plugin-sass';
+import { defineConfig } from '@rspress/core';
+import remarkGithub from 'remark-github';
 import { pluginChangelog } from 'rspress-plugin-changelog';
 import type { ChangelogPluginOptions } from 'rspress-plugin-changelog';
 import pluginSitemap from 'rspress-plugin-sitemap';
-import { defineConfig } from 'rspress/config';
 
 const siteUrl = 'https://DualSubs.github.io';
 
@@ -44,19 +46,22 @@ export default defineConfig({
     ],
   },
   builderConfig: {
-    source: {
-      alias: {},
+    plugins: [pluginSass()],
+    resolve: {
+      alias: {
+        'rspress/theme': '@rspress/core/theme',
+      },
     },
   },
   markdown: {
-    mdxRs: false,
-    remarkPlugins: [[require('remark-github')]],
+    remarkPlugins: [[remarkGithub]],
   },
   plugins: [
     pluginSitemap({
       domain: siteUrl,
     }),
     pluginChangelog({
+      addSidebar: false,
       fetchOnDev: false,
       items: generateChangelogParams([
         {

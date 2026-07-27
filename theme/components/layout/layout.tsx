@@ -1,11 +1,9 @@
 import { NavIcon } from '@nsnanocat/doc-ui';
-import Theme from 'rspress/theme';
-
+import { Layout as RspressLayout } from '@rspress/core/theme-original';
 import { useEffect } from 'react';
+
 import { useTopArrived } from './hooks/use-top-arrived';
-
 import styles from './layout.module.scss';
-
 import './layout.css';
 
 export const Layout = () => {
@@ -22,5 +20,5 @@ export const Layout = () => {
     };
   }, [topArrived]);
 
-  return <Theme.Layout beforeNavTitle={<NavIcon />} />;
+  return <RspressLayout beforeNavTitle={<NavIcon />} />;
 };

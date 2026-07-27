@@ -1,12 +1,4 @@
-import Theme from 'rspress/theme';
-import { HomeLayout } from './components/home-layout';
-import { Layout } from './components/layout';
-
-export default {
-  ...Theme,
-  HomeLayout,
-  Layout,
-};
-
-export * from 'rspress/theme';
 export { ModuleInstall } from '@nsnanocat/doc-ui';
+export * from '@rspress/core/theme-original';
+export { HomeLayout } from './components/home-layout';
+export { Layout } from './components/layout';
