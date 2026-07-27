@@ -1,4 +1,4 @@
-import { NavIcon } from '@iringo/doc-ui';
+import { NavIcon } from '@nsnanocat/doc-ui';
 import Theme from 'rspress/theme';
 
 import { useEffect } from 'react';

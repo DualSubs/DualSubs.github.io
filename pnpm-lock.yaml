@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@iringo/doc-ui':
-        specifier: ^2.4.1
-        version: 2.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@nsnanocat/doc-ui':
+        specifier: ^2.4.4
+        version: 2.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       remark-github:
         specifier: ^12.0.0
         version: 12.0.0
@@ -102,9 +102,6 @@ packages:
   '@bufbuild/protobuf@2.9.0':
     resolution: {integrity: sha512-rnJenoStJ8nvmt9Gzye8nkYd6V22xUAnu4086ER7h1zJ508vStko4pMvDeQ446ilDTFpV5wnoc5YS7XvMwwMqA==}
 
-  '@iringo/doc-ui@2.4.1':
-    resolution: {integrity: sha512-kZcJlGzOv/UuuxWkpa5F8moMARvUMlFvz4lz7wiSv/cj4P4QFcodhBe1f6ZJU0pK/6ILXMNTZyiYbELUt/GTRQ==}
-
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -187,6 +184,13 @@ packages:
 
   '@module-federation/webpack-bundler-runtime@0.14.0':
     resolution: {integrity: sha512-POWS6cKBicAAQ3DNY5X7XEUSfOfUsRaBNxbuwEfSGlrkTE9UcWheO06QP2ndHi8tHQuUKcIHi2navhPkJ+k5xg==}
+
+  '@nsnanocat/doc-ui@2.4.4':
+    resolution: {integrity: sha512-QAcWUTnroMp39Zq93IcZ1EiIwSiXRVn8SF75aGItNVvk3+AZz+xr5Ajq/mIIkxlQD7UktSDnsIYtdtbH+2MR6Q==, tarball: https://npm.pkg.github.com/download/@nsnanocat/doc-ui/2.4.4/908725be6df385d6ceb5c599b8c90e38c2f9d298}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18.3.1 <20'
+      react-dom: '>=18.3.1 <20'
 
   '@parcel/watcher-android-arm64@2.5.1':
     resolution: {integrity: sha512-KF8+j9nNbUN8vzOFDpRMsaKBHZ/mcjEjMToVMJOhTozkDonQFFrRcfdLWn6yWKCmJKmdVxSgHiYvTCef4/qcBA==}
@@ -526,6 +530,7 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -1971,14 +1976,6 @@ snapshots:
 
   '@bufbuild/protobuf@2.9.0': {}
 
-  '@iringo/doc-ui@2.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@rc-component/qrcode': 1.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      rc-tooltip: 6.4.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -2093,6 +2090,13 @@ snapshots:
     dependencies:
       '@module-federation/runtime': 0.14.0
       '@module-federation/sdk': 0.14.0
+
+  '@nsnanocat/doc-ui@2.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@rc-component/qrcode': 1.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      rc-tooltip: 6.4.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@parcel/watcher-android-arm64@2.5.1':
     optional: true

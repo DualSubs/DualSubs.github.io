@@ -9,4 +9,4 @@ export default {
 };
 
 export * from 'rspress/theme';
-export { ModuleInstall } from '@iringo/doc-ui';
+export { ModuleInstall } from '@nsnanocat/doc-ui';
