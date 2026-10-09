@@ -1,0 +1,125 @@
+{
+  "title": "DualSubs",
+  "logo": "assets/DualSubs.png",
+  "sections": [
+    {
+      "title": "插件",
+      "layout": "grid",
+      "items": [
+        {
+          "name": "Universal",
+          "icon": {
+            "src": "assets/Universal.png"
+          },
+          "module": "Universal"
+        },
+        {
+          "name": "YouTube",
+          "icon": {
+            "src": "assets/YouTube.png"
+          },
+          "module": "YouTube"
+        },
+        {
+          "name": "Netflix",
+          "icon": {
+            "src": "assets/Netflix.png"
+          },
+          "module": "Netflix"
+        },
+        {
+          "name": "Spotify",
+          "icon": {
+            "src": "assets/Spotify.png"
+          },
+          "module": "Spotify"
+        }
+      ]
+    },
+    {
+      "title": "字幕与歌词",
+      "layout": "grid",
+      "items": [
+        {
+          "name": "合成器",
+          "icon": {
+            "text": "🧩"
+          },
+          "module": "Composite"
+        },
+        {
+          "name": "翻译器",
+          "icon": {
+            "text": "🌐"
+          },
+          "module": "Translate"
+        },
+        {
+          "name": "外部源",
+          "icon": {
+            "text": "📎"
+          },
+          "module": "External"
+        }
+      ]
+    },
+    {
+      "title": "API",
+      "layout": "grid",
+      "items": [
+        {
+          "name": "翻译器 API",
+          "icon": {
+            "text": "🔑"
+          },
+          "module": "API_Translate",
+          "pageModule": "API"
+        },
+        {
+          "name": "外部源 API",
+          "icon": {
+            "text": "🔑"
+          },
+          "module": "API_External",
+          "pageModule": "API"
+        }
+      ]
+    },
+    {
+      "title": "支持与帮助",
+      "layout": "list",
+      "items": [
+        {
+          "name": "官方网站",
+          "icon": {
+            "text": "🏠"
+          },
+          "description": "DualSubs 项目与使用说明",
+          "href": "https://dualsubs.github.io/",
+          "target": "internal"
+        },
+        {
+          "name": "GitHub 组织",
+          "icon": {
+            "text": "🐙"
+          },
+          "description": "项目与源码",
+          "href": "https://github.com/DualSubs",
+          "target": "_blank"
+        },
+        {
+          "name": "官方论坛",
+          "icon": {
+            "text": "💬"
+          },
+          "description": "交流讨论与问题反馈",
+          "href": "https://github.com/orgs/DualSubs/discussions",
+          "target": "_blank"
+        }
+      ]
+    }
+  ],
+  "footer": [
+    "设置保存在当前代理工具中。使用本地设置前，请将配置类型设为 PersistentStore。"
+  ]
+}
