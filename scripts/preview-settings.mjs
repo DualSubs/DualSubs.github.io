@@ -31,27 +31,29 @@ const execute = (script, request) =>
 async function configResponse(resource) {
   const url = new URL(resource.url);
   const panel = url.pathname.slice('/api/'.length);
-  const { apps } = JSON.parse(
-    await readFile(
-      path.resolve(import.meta.dirname, `../../Universal/template/boxjs.panels${channel === 'dev' ? '.dev' : ''}.json`),
+  let owner;
+  switch (panel) {
+    case 'YouTube':
+    case 'Netflix':
+    case 'Spotify':
+      owner = panel;
+      break;
+    default:
+      owner = 'Universal';
+  }
+  let body;
+  try {
+    body = await readFile(
+      path.resolve(
+        import.meta.dirname,
+        `../../${owner}/dist/DualSubs.${panel.replaceAll('_', '.')}${channel === 'dev' ? '.dev' : ''}.PreferencePanes.json`,
+      ),
       'utf8',
-    ),
-  );
-  const app = apps.find(
-    (app) =>
-      app.id
-        .replace(/\.beta$/, '')
-        .slice('DualSubs.'.length)
-        .replaceAll('.', '_') === panel,
-  );
-  if (!app) return { status: 404, headers: {}, body: '' };
-  const body = await readFile(
-    path.resolve(
-      import.meta.dirname,
-      `../../Universal/dist/${app.id.replace(/\.beta$/, '')}${channel === 'dev' ? '.dev' : ''}.PreferencePanes.json`,
-    ),
-    'utf8',
-  );
+    );
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    return { status: 404, headers: {}, body: '' };
+  }
   return {
     status: 200,
     headers: {

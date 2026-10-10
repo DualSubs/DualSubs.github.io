@@ -22,7 +22,7 @@ export PREFERENCE_PANES_HOME=/Users/clyne/GitHub/NSNanoCat/PreferencePanes/dist/
 
 构建只复制 JSON 和 JSON 引用的本地图片。预览标记、部署时间与提交号追加到生成 JSON 的 `footer`；预览与部署 HTML 与框架字节一致，不替换输入属性或标题。测试位于 `tests`，构建与预览沿用 `scripts`。
 
-先构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。`file://` 无法提供模块页与 API。默认预览开发面板，`SETTINGS_CHANNEL=formal` 切换正式面板。Universal 继续映射通用模块页与 `index.mjs`，并提供现有配置和固定存储 API。
+先构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。YouTube、Netflix、Spotify 的配置由各自仓库生成；预览这些面板还需构建对应仓库的 `build:dev-args`（正式通道使用 `build:args`）。缺少对应产物时返回 404，保持入口未启用。`file://` 无法提供模块页与 API。默认预览开发面板，`SETTINGS_CHANNEL=formal` 切换正式面板。Universal 继续映射通用模块页与 `index.mjs`，并提供现有配置和固定存储 API。
 
 
 首页与设置页的默认 CSS 已合并为 PreferencePanes 的 `styles.css`，复用同一安装与清理逻辑，构建时随页面内置。默认 CSS 源码为一份；Biliverse 额外提供一份 `theme.css`，DualSubs 不提供品牌 CSS。
