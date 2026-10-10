@@ -75,11 +75,6 @@ const server = http.createServer(async (request, reply) => {
     }
     const config = /^\/api\/([a-zA-Z0-9_-]+)$/.exec(url.pathname) && !/^\/api\/(?:get|set|delete)$/.test(url.pathname);
     const api = /^\/api\/(?:get|set|delete)$/.test(url.pathname);
-    const page = /^\/settings\/([a-zA-Z0-9_-]+)\/?$/.test(url.pathname);
-    const asset = {
-      '/settings/assets/index.mjs': 'index.mjs',
-      '/settings/assets/navigation.mjs': 'navigation.mjs',
-    }[url.pathname];
     if (config || api) {
       let body = '';
       for await (const chunk of request) body += chunk;
@@ -93,20 +88,6 @@ const server = http.createServer(async (request, reply) => {
       }
       reply.writeHead(result?.status ?? 404, result?.headers);
       reply.end(result?.body);
-      return;
-    }
-    if (page || asset) {
-      const file = path.resolve(
-        import.meta.dirname,
-        '../../../NSNanoCat/PreferencePanes/dist/module',
-        asset ?? 'index.html',
-      );
-      const body = await readFile(file);
-      reply.writeHead(200, {
-        'Content-Type': asset ? 'text/javascript' : 'text/html',
-        'Cache-Control': 'no-store',
-      });
-      reply.end(request.method === 'HEAD' ? undefined : body);
       return;
     }
     if (!url.pathname.startsWith('/settings/') || !['GET', 'HEAD'].includes(request.method)) {

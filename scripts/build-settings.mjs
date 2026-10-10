@@ -8,15 +8,27 @@ const stamp = process.argv.includes('--stamp');
 // 原样复制同版框架；项目差异只来自固定路径的内容资源。
 // Copy the same framework unchanged; project differences come only from content at fixed paths.
 const templateSource = process.env.PREFERENCE_PANES_HOME ?? 'https://github.com/NSNanoCat/PreferencePanes/releases/download/v1.3.0/home.html';
-let template;
-if (templateSource.startsWith('https://')) {
-  const response = await fetch(templateSource);
-  if (!response.ok) throw new Error(`PreferencePanes homepage template: HTTP ${response.status}`);
-  template = Buffer.from(await response.arrayBuffer());
-} else template = await readFile(path.resolve(templateSource));
-if (template.toString().includes('__PREFERENCE_PANES_')) throw new Error('Expected a compiled PreferencePanes homepage');
-const outputs = new Map([['settings/index.html', template]]);
+const resources = new Map();
+for (const name of ['home.html', 'index.html', 'index.mjs']) {
+  const source = name === 'home.html' ? templateSource : templateSource.startsWith('https://')
+    ? new URL(name, templateSource).href
+    : path.resolve(path.dirname(templateSource), 'module', name);
+  let body;
+  if (source.startsWith('https://')) {
+    const response = await fetch(source);
+    if (!response.ok) throw new Error(`PreferencePanes ${name}: HTTP ${response.status}`);
+    body = Buffer.from(await response.arrayBuffer());
+  } else body = await readFile(path.resolve(source));
+  resources.set(name, body);
+}
+if (resources.get('home.html').toString().includes('__PREFERENCE_PANES_')) throw new Error('Expected a compiled PreferencePanes homepage');
+const outputs = new Map([
+  ['settings/index.html', resources.get('home.html')],
+  ['settings/assets/index.mjs', resources.get('index.mjs')],
+]);
 const config = JSON.parse(await readFile(path.join(root, 'settings/home.json'), 'utf8'));
+for (const module of new Set(config.sections.flatMap(section => section.items.filter(item => item.module).map(item => item.pageModule ?? item.module))))
+  outputs.set(`settings/${module}/index.html`, resources.get('index.html'));
 // 构建信息属于 JSON 页脚，不能改写共用 HTML。
 // Build information belongs to the JSON footer and must not rewrite the shared HTML.
 let label = '本地预览（未构建）';

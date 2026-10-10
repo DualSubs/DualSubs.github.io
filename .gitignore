@@ -39,3 +39,5 @@ log/
 .pnpm-store/
 
 doc_build/
+/docs/public/settings/*/index.html
+/docs/public/settings/assets/index.mjs

@@ -14,15 +14,15 @@ pnpm settings:test
 pnpm settings:preview
 ```
 
-构建默认使用 PreferencePanes `v1.3.0` Release 的 `home.html`，与 Universal 模板中的模块页、脚本和存储 API 保持同版。验收未发布模板时，先构建 PreferencePanes，并为上述命令指定同一份本地文件：
+构建默认使用 PreferencePanes `v1.3.0` Release 的 `home.html`、`index.html` 和 `index.mjs`，与 Universal 的存储 API 保持同版。验收未发布模板时，先构建 PreferencePanes，并为上述命令指定同一份本地文件：
 
 ```sh
 export PREFERENCE_PANES_HOME=/Users/clyne/GitHub/NSNanoCat/PreferencePanes/dist/home.html
 ```
 
-构建只复制 JSON 和 JSON 引用的本地图片。预览标记、部署时间与提交号追加到生成 JSON 的 `footer`；预览与部署 HTML 与框架字节一致，不替换输入属性或标题。测试位于 `tests`，构建与预览沿用 `scripts`。
+构建原样复制框架、JSON 和 JSON 引用的本地图片。首页 JSON 中的 `module`／`pageModule` 决定设置页目录，各目录使用同一份模块 HTML，所有面板共用 `/settings/assets/index.mjs`；生成的模块页与脚本不纳入源码版本管理。预览标记、部署时间与提交号追加到生成 JSON 的 `footer`；预览与部署 HTML 与框架字节一致，不替换输入属性或标题。测试位于 `tests`，构建与预览沿用 `scripts`。
 
-先构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。YouTube、Netflix、Spotify 的配置由各自仓库生成；预览这些面板还需构建对应仓库的 `build:dev-args`（正式通道使用 `build:args`）。缺少对应产物时返回 404，保持入口未启用。`file://` 无法提供模块页与 API。默认预览开发面板，`SETTINGS_CHANNEL=formal` 切换正式面板。Universal 继续映射通用模块页与 `index.mjs`，并提供现有配置和固定存储 API。
+先执行 `pnpm settings:build` 并构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。YouTube、Netflix、Spotify 的配置由各自仓库生成；预览这些面板还需构建对应仓库的 `build:dev-args`（正式通道使用 `build:args`）。缺少对应产物时返回 404，保持入口未启用。`file://` 无法提供模块页与 API。默认预览开发面板，`SETTINGS_CHANNEL=formal` 切换正式面板。预览直接使用站点构建的网页资源，仅模拟配置和存储 API。在线网页资源由 GitHub.io 提供；Universal 只拦截现有配置和固定存储 API，其余插件只拦截各自配置。
 
 
 首页与设置页的默认 CSS 已合并为 PreferencePanes 的 `styles.css`，复用同一安装与清理逻辑，构建时随页面内置。默认 CSS 源码为一份；Biliverse 额外提供一份 `theme.css`，DualSubs 不提供品牌 CSS。
@@ -42,3 +42,7 @@ CSS 合并后重新通过框架 71 项及两站 6 项测试、框架类型检查
 ## Universal 接入验收（2026-10-10）
 
 使用已发布的 PreferencePanes `v1.3.0` 重新构建，预览与部署首页均与 Release 模板字节一致。站点打包测试、TypeScript 检查和完整构建通过；Universal 5 项测试、正式／开发模板构建、Egern 转换与 Surge 离线配置检查通过。Codex 浏览器核对了九个面板入口、Universal 外挂字幕选项和逐级返回。本次提交保留在 `dev`，未推送或部署。
+
+## 在线网页资源接入（2026-10-10）
+
+站点构建同时部署同版设置页与脚本，8 个模块页面与 Release 的共用 HTML 字节一致，共用脚本也与 Release 字节一致。预览直接读取这些构建产物，不再代供网页资源。站点完整构建、打包测试和 TypeScript 检查通过；Universal 正式／开发构建与 Egern 校验通过，移除网页 Mock 后配置 JSON 保持不变。
