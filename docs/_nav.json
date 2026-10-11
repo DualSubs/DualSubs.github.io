@@ -19,5 +19,9 @@
     "text": "赞助",
     "link": "https://afdian.com/a/HashBrown",
     "activeMatch": "^/a/HashBrown"
+  },
+  {
+    "text": "设置面板",
+    "link": "/settings/"
   }
 ]
