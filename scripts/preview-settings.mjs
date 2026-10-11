@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 // 预览真实发布产物；预览服务器逐文件加载通用资源、配置和固定存储 API。
 // Preview the real deployment artifacts by loading common resources, configuration and the fixed storage API per file.
-const publicDir = path.resolve(import.meta.dirname, '../docs/public');
+const publicDir = path.resolve(import.meta.dirname, process.env.SETTINGS_PUBLIC_DIR ?? '../docs/public');
 const store = new Map();
 const channel = process.env.SETTINGS_CHANNEL ?? 'dev';
 if (!['formal', 'dev'].includes(channel)) throw new TypeError('SETTINGS_CHANNEL must be formal or dev');

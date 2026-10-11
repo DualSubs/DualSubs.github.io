@@ -46,3 +46,9 @@ CSS 合并后重新通过框架 71 项及两站 6 项测试、框架类型检查
 ## 在线网页资源接入（2026-10-10）
 
 站点构建同时部署同版设置页与脚本，8 个模块页面与 Release 的共用 HTML 字节一致，共用脚本也与 Release 字节一致。预览直接读取这些构建产物，不再代供网页资源。站点完整构建、打包测试和 TypeScript 检查通过；Universal 正式／开发构建与 Egern 校验通过，移除网页 Mock 后配置 JSON 保持不变。
+
+## 单文档设置框架（1.3.1）
+
+`settings/home.json` 定义入口；默认样式和网页能力均来自 PreferencePanes 内联 `home.html`。模块与字段子页使用首页同一文档，首页 HEAD 探测，点击入口才 GET 对应 API 配置。API 面板分别使用 API_Translate / API_External 配置地址，存储模块由字段 ID 推导。
+
+构建固定使用 PreferencePanes 1.3.1，仅复制 home.html、JSON、实际提供的可选 theme.css / bridge.mjs 及 JSON 引用图片，不输出旧模块 HTML / JS。插件继续只携带 api.js 与配置 JSON。本地构建可用 PREFERENCE_PANES_HOME 指向框架产物；预览可用 SETTINGS_PUBLIC_DIR=../doc_build 读取部署产物。

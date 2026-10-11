@@ -1,6 +1,7 @@
 {
   "title": "DualSubs",
   "logo": "assets/DualSubs.png",
+  "logoText": "DualSubs",
   "sections": [
     {
       "title": "插件",
@@ -72,16 +73,14 @@
           "icon": {
             "text": "🔑"
           },
-          "module": "API_Translate",
-          "pageModule": "API"
+          "module": "API_Translate"
         },
         {
           "name": "外部源 API",
           "icon": {
             "text": "🔑"
           },
-          "module": "API_External",
-          "pageModule": "API"
+          "module": "API_External"
         }
       ]
     },
