@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 test('both deployment channels copy the framework unchanged and package only provided content', async () => {
-  const templateSource = process.env.PREFERENCE_PANES_HOME ?? 'https://github.com/NSNanoCat/PreferencePanes/releases/download/v1.3.1/home.html';
+  const templateSource = process.env.PREFERENCE_PANES_HOME ?? 'https://github.com/NSNanoCat/PreferencePanes/releases/download/v1.3.2/home.html';
   let template;
   if (templateSource.startsWith('https://')) {
     const response = await fetch(templateSource);

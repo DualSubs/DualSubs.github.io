@@ -7,7 +7,7 @@ const check = process.argv.includes('--check');
 const stamp = process.argv.includes('--stamp');
 // 原样复制同版框架；项目差异只来自固定路径的内容资源。
 // Copy the same framework unchanged; project differences come only from content at fixed paths.
-const templateSource = process.env.PREFERENCE_PANES_HOME ?? 'https://github.com/NSNanoCat/PreferencePanes/releases/download/v1.3.1/home.html';
+const templateSource = process.env.PREFERENCE_PANES_HOME ?? 'https://github.com/NSNanoCat/PreferencePanes/releases/download/v1.3.2/home.html';
 let template;
 if (templateSource.startsWith('https://')) {
   const response = await fetch(templateSource);

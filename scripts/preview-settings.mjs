@@ -90,12 +90,18 @@ const server = http.createServer(async (request, reply) => {
       reply.end(result?.body);
       return;
     }
-    if (!url.pathname.startsWith('/settings/') || !['GET', 'HEAD'].includes(request.method)) {
+    if (
+      (!url.pathname.startsWith('/settings/') && !url.pathname.startsWith('/static/font/')) ||
+      !['GET', 'HEAD'].includes(request.method)
+    ) {
       reply.writeHead(404);
       reply.end();
       return;
     }
-    let target = path.join(publicDir, url.pathname.slice(1));
+    let target = path.join(
+      url.pathname.startsWith('/static/font/') ? path.resolve(import.meta.dirname, '../doc_build') : publicDir,
+      url.pathname.slice(1),
+    );
     if (!path.extname(target)) target = path.join(target, 'index.html');
     try {
       const body = await readFile(target);
@@ -107,6 +113,8 @@ const server = http.createServer(async (request, reply) => {
           '.mjs': 'text/javascript',
           '.json': 'application/json',
           '.png': 'image/png',
+          '.woff': 'font/woff',
+          '.woff2': 'font/woff2',
         }[path.extname(target)] ?? 'text/plain';
       reply.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-store' });
       reply.end(request.method === 'HEAD' ? undefined : body);
