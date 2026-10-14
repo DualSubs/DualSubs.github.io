@@ -18,19 +18,12 @@ import _Footer from "./_Footer.md";
     * 当`外部源`提供歌词原文及翻译时，歌词面板右下角显示`翻译`按钮
   * 对于 Spotify App: 拥有歌词的歌曲，点击歌词面板右上角的`翻译`按钮即可显示双语歌词
   * 对于 Spotify Web: 拥有歌词的歌曲，歌词直接显示为两行双语
-* 进阶: 配合`Loon`设置面板或`Surge`参数设置功能进行个性化设置
-  * 提供一定的自定义设置，如`翻译器`选择、`外部源`选择等
-* 高级: 配合`BoxJs`及订阅使用
-  <details>
-  <summary>ℹ️ 用前须知：使用`BoxJs`进行配置将被视为专业用户，官方不受理因使用`BoxJs`配置导致的各种问题</summary>
-
-  1. 安装`BoxJs`插件并更新引用资源或脚本:
-    * 安装方法及下载链接详见: [🧰 BoxJs](./box-js)
-  2. 在`BoxJs`的配置面板中进行个性化设置:
-     1. 浏览器访问[BoxJs.com](http://boxjs.com)
-     2. 在[`应用`](http://boxjs.com/#/app)页面点开`DualSubs`折叠
-     3. 根据需要访问对应的配置面板配置高级设置
-  </details>
+* 个性化设置: 使用[在线设置面板](https://dualsubs.github.io/settings/)
+  * 先安装 Universal 提供的共用存储功能，再进入对应插件及「合成器」「翻译器」「外部源」面板调整设置。
+  * 入口步骤、配置优先级、设置项与默认值见[设置指南](./settings)。默认优先使用在线面板或 BoxJs 保存的配置。
+* 模块／插件参数: 使用 `Loon` 设置面板或 `Surge` 参数设置等功能
+  * 如需优先使用这些参数，将「[储存] 配置类型」设为「插件配置优先」（`Storage=Argument`）。
+* BoxJs: 仍可配置相同的持久化设置，安装与订阅方法见 [BoxJs 指南](./box-js)。
 
 ## 功能列表
   * 翻译歌词功能：详见[🍿 DualSubs: 🔣 Universal#功能列表](./universal#功能列表)
