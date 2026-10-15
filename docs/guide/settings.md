@@ -1,4 +1,4 @@
-# ⚙️ 设置指南
+# ⚙️ 偏好面板
 
 DualSubs 的[在线设置面板](https://dualsubs.github.io/settings/)用于配置已安装的插件、字幕与歌词处理方式及第三方 API，无需安装 BoxJs。面板由整个 DualSubs 项目共用，使用 [PreferencePanes 配置模板](https://github.com/NSNanoCat/PreferencePanes)。
 

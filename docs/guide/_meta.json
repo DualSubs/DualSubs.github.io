@@ -4,13 +4,26 @@
         "name": "index",
         "label": "预览"
     },
-    "settings",
     "universal",
     "youtube",
     "spotify",
     "netflix",
     "addon",
-    "box-js",
+    {
+        "type": "custom-link",
+        "label": "⚙️ 设置指南",
+        "collapsible": false,
+        "items": [
+            {
+                "label": "偏好面板",
+                "link": "/guide/settings"
+            },
+            {
+                "label": "🧰 BoxJs",
+                "link": "/guide/box-js"
+            }
+        ]
+    },
     {
         "type": "dir",
         "name": "appendix",
