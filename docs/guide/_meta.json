@@ -16,7 +16,7 @@
         "items": [
             {
                 "label": "偏好面板",
-                "link": "/guide/settings"
+                "link": "/guide/preferences"
             },
             {
                 "label": "🧰 BoxJs",

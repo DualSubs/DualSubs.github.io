@@ -21,7 +21,7 @@
     "activeMatch": "^/a/HashBrown"
   },
   {
-    "text": "设置面板",
-    "link": "/settings/"
+    "text": "偏好面板",
+    "link": "/preferences/"
   }
 ]

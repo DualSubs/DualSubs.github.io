@@ -1,0 +1,2207 @@
+<!doctype html>
+<html lang="zh-CN" class="pp-page">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>设置</title>
+  </head>
+  <body>
+    <div data-preference-panes-pages>
+      <main class="pp-home" data-preference-panes-home></main>
+    </div>
+    <script type="module">/**
+ * 共用菜单按钮和底部操作菜单；原生宿主可通过 MORE 调用。
+ * Shared menu trigger and bottom action sheet; native hosts may invoke it through MORE.
+ */
+class ActionMenu {
+    #button;
+    #layer;
+    #items;
+    #select;
+    #document;
+    #disabled = true;
+    #key = event => {
+        if (event.key === "Escape" && !this.#layer.hidden) {
+            event.preventDefault();
+            this.close();
+            this.#button.focus();
+        }
+    };
+
+    /**
+     * 创建菜单，操作逻辑由调用方提供。
+     * Create a menu whose actions are handled by the caller.
+     * @param {(id: string) => void} select 菜单选择回调 / Selection callback.
+     */
+    constructor(select) {
+        this.#document = document;
+        this.#select = select;
+        this.element = document.createElement("span");
+        const triggerRoot = this.element.attachShadow({ mode: "open" });
+        triggerRoot.innerHTML = `<style>
+          :host{display:inline-flex;flex:none;width:37px;height:37px;color:inherit}
+          :host([hidden]){display:none!important}
+          button{box-sizing:border-box;width:37px;height:37px;padding:8px;border-radius:4px;font:inherit;cursor:pointer;border:0;color:inherit;background:none;transition:background-color .3s}
+          button:hover{background:var(--pp-field,#8882)}
+          button:disabled{opacity:.4;cursor:default}
+          button:focus-visible{outline:2px solid currentColor;outline-offset:-3px}
+          svg{display:block;width:21px;height:21px;fill:none}
+        </style><button type="button" aria-label="更多操作" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 21 21" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.667" d="M3.645 5.225h13.333M3.645 10.225h13.333M3.645 15.225h13.333"/></svg></button>`;
+        this.#button = triggerRoot.querySelector("button");
+        this.#layer = document.createElement("span");
+        const layerRoot = this.#layer.attachShadow({ mode: "open" });
+        layerRoot.innerHTML = `<style>
+          :host{position:fixed;inset:0;z-index:2147483647;color:var(--pp-text,CanvasText);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+          :host([hidden]){display:none!important}
+          *,*::before,*::after{box-sizing:border-box}
+          button{font:inherit;cursor:pointer;border:0;color:inherit;background:none}
+          button:focus-visible{outline:2px solid var(--pp-accent,Highlight);outline-offset:-3px}
+          #backdrop{position:absolute;inset:0;width:100%;height:100%;padding:0;background:#0008;animation:pp-fade-in .18s ease-out}
+          #sheet{position:absolute;z-index:1;left:0;right:0;bottom:0;width:100%;max-width:540px;max-height:calc(100% - 24px);margin:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));animation:pp-sheet-in .22s cubic-bezier(.2,.8,.2,1)}
+          #items,#cancel{overflow:hidden;background:var(--pp-surface,Canvas);border:1px solid var(--pp-border,#8884);border-radius:14px;box-shadow:0 8px 28px #0004}
+          #items{max-height:calc(100vh - 116px - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
+          #items button,#cancel{display:block;width:100%;min-height:54px;padding:14px 18px;text-align:center}
+          #items button+button{border-top:1px solid var(--pp-border,#8884)}
+          #items button[data-danger]{color:var(--pp-danger,#e45656)}
+          #cancel{margin-top:8px;color:var(--pp-accent,Highlight);font-weight:600}
+          @keyframes pp-fade-in{from{opacity:0}}
+          @keyframes pp-sheet-in{from{transform:translateY(100%)}}
+          @media (prefers-reduced-motion:reduce){#backdrop,#sheet{animation:none}}
+        </style><button id="backdrop" type="button" tabindex="-1" aria-label="关闭菜单"></button><section id="sheet" role="dialog" aria-modal="true" aria-label="更多操作"><div id="items" role="menu"></div><button id="cancel" type="button">取消</button></section>`;
+        this.#items = layerRoot.querySelector("#items");
+        this.#button.onclick = () => (this.#layer.hidden ? this.open() : this.close());
+        layerRoot.querySelector("#backdrop").onclick = () => {
+            this.close();
+            this.#button.focus();
+        };
+        layerRoot.querySelector("#cancel").onclick = () => {
+            this.close();
+            this.#button.focus();
+        };
+        this.#items.onkeydown = event => {
+            const items = [...this.#items.children];
+            const index = items.indexOf(layerRoot.activeElement);
+            const offsets = { ArrowDown: 1, ArrowUp: -1 };
+            if (event.key in offsets) {
+                event.preventDefault();
+                items[(index + offsets[event.key] + items.length) % items.length].focus();
+            }
+        };
+        document.body.append(this.#layer);
+        document.addEventListener("keydown", this.#key);
+        this.update([]);
+    }
+
+    /**
+     * 同步可用操作和忙碌状态，不重建菜单触发按钮。
+     * Update actions and busy state without replacing the trigger button.
+     * @param {Array<{id: string, label: string, destructive?: boolean}>} items 操作列表 / Actions.
+     * @param {boolean} [disabled] 是否忙碌 / Whether operations are busy.
+     * @returns {void} 无返回值 / No return value.
+     */
+    update(items, disabled = false) {
+        this.close();
+        this.#disabled = disabled || items.length === 0;
+        this.#button.disabled = this.#disabled;
+        this.#items.replaceChildren(
+            ...items.map(item => {
+                const button = this.#document.createElement("button");
+                button.type = "button";
+                button.setAttribute("role", "menuitem");
+                button.textContent = item.label;
+                button.toggleAttribute("data-danger", Boolean(item.destructive));
+                button.onclick = () => {
+                    this.close();
+                    this.#select(item.id);
+                };
+                return button;
+            }),
+        );
+    }
+
+    /**
+     * 打开当前操作菜单。
+     * Open the current action sheet.
+     * @returns {void} 无返回值 / No return value.
+     */
+    open() {
+        if (this.#disabled) return;
+        const style = getComputedStyle(this.element);
+        for (const property of ["--pp-text", "--pp-surface", "--pp-border", "--pp-accent", "--pp-danger"]) {
+            const value = style.getPropertyValue(property);
+            if (value) this.#layer.style.setProperty(property, value);
+        }
+        this.#layer.hidden = false;
+        this.#button.setAttribute("aria-expanded", "true");
+        this.#items.firstElementChild.focus();
+    }
+
+    /**
+     * 关闭菜单。
+     * Close the menu.
+     * @returns {void} 无返回值 / No return value.
+     */
+    close() {
+        this.#layer.hidden = true;
+        this.#button.setAttribute("aria-expanded", "false");
+    }
+
+    /**
+     * 移除监听器与节点。
+     * Remove listeners and elements.
+     * @returns {void} 无返回值 / No return value.
+     */
+    destroy() {
+        this.#document.removeEventListener("keydown", this.#key);
+        this.#layer.remove();
+        this.element.remove();
+    }
+}
+
+/**
+ * 模块探测请求选项。
+ * Options for a module probe request.
+ * @typedef {object} ModuleProbeOptions
+ * @property {typeof globalThis.fetch} [fetch] 可注入的 fetch / Injectable fetch.
+ * @property {AbortSignal} [signal] 外部取消信号 / External cancellation signal.
+ * @property {number} [timeout] 超时毫秒数，默认 3500 / Timeout in milliseconds, defaults to 3500.
+ */
+
+/**
+ * 通过模块 API 的 HEAD 响应检测安装状态和业务版本。
+ * Probe installation and business version from the module API HEAD response.
+ * @param {string | URL} url 模块 API 地址 / Module API URL.
+ * @param {ModuleProbeOptions} [options] 请求选项 / Request options.
+ * @returns {Promise<Response>} 原始 HTTP 响应，可直接读取 status 和响应头 / Native HTTP response; read status and headers directly.
+ */
+async function probeModule(url, { fetch: request = globalThis.fetch, signal, timeout = 3500 } = {}) {
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (signal?.aborted) abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+        return await request(url, { method: "HEAD", cache: "no-store", credentials: "omit", signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", abort);
+    }
+}
+
+/**
+ * 模块入口的固定状态行，只通过 HEAD 探测安装状态和业务版本。
+ * Fixed module status row, probing installation and business version with HEAD only.
+ */
+class ModuleStatus extends EventTarget {
+    #element;
+    #controller;
+    #state = { status: "checking", version: null };
+
+    /**
+     * 绑定调用方提供的状态行。
+     * Bind a caller-owned status row.
+     * @param {HTMLElement} element 状态文字容器 / Status text container.
+     */
+    constructor(element) {
+        super();
+        this.#element = element;
+        this.#render("checking");
+    }
+
+    /**
+     * 当前安装状态与业务版本。
+     * Current installation state and business version.
+     */
+    get state() {
+        return { ...this.#state };
+    }
+
+    /**
+     * 每次进入重新探测，取消旧请求并忽略其迟到结果。
+     * Reprobe on entry, cancelling old requests and ignoring late results.
+     * @param {string | URL} url 模块 API 地址 / Module API URL.
+     * @param {ModuleProbeOptions} [options] 请求选项 / Request options.
+     * @returns {Promise<Response | undefined>} 原始响应；被取消时无返回值 / Native response; undefined when cancelled.
+     */
+    async check(url, options = {}) {
+        this.#controller?.abort();
+        const controller = new AbortController();
+        this.#controller = controller;
+        const externalSignal = options.signal;
+        const abort = () => controller.abort();
+        if (externalSignal?.aborted) abort();
+        externalSignal?.addEventListener("abort", abort, { once: true });
+        this.#render("checking");
+        try {
+            const response = await probeModule(url, { ...options, signal: controller.signal });
+            if (controller !== this.#controller) return response;
+            const version = response.status === 200 ? response.headers.get("X-PreferencePanes-Version")?.trim() || null : null;
+            this.#render(version ? "installed" : "missing", version);
+            return response;
+        } catch (error) {
+            if (controller !== this.#controller) return;
+            if (externalSignal?.aborted) throw error;
+            this.#render("missing");
+        } finally {
+            externalSignal?.removeEventListener("abort", abort);
+        }
+    }
+
+    /**
+     * 更新状态标签，缺少版本时不伪造版本号。
+     * Render the label without inventing a missing version.
+     * @param {"checking" | "installed" | "missing"} status 状态 / State.
+     * @param {string | null} [version] 业务版本 / Business version.
+     * @returns {void} 无返回值 / No return value.
+     */
+    #render(status, version = null) {
+        this.#state = { status, version: status === "installed" ? version : null };
+        switch (status) {
+            case "checking":
+                this.#element.textContent = "检测中";
+                break;
+            case "installed":
+                this.#element.textContent = version ?? "版本未知";
+                break;
+            case "missing":
+                this.#element.textContent = "未安装";
+                break;
+        }
+        this.#element.dataset.state = status;
+        this.#element.title = this.#element.textContent;
+        this.dispatchEvent(new Event("change"));
+    }
+
+    /**
+     * 释放尚未完成的探测。
+     * Release pending probes.
+     * @returns {void} 无返回值 / No return value.
+     */
+    destroy() {
+        this.#controller?.abort();
+        this.#controller = undefined;
+    }
+}
+
+/**
+ * 同一文档内的首页、模块及字段子页导航。
+ * Navigate homepage, module and field views within one document.
+ */
+class Navigation extends EventTarget {
+    #container;
+    #home;
+    #create;
+    #window;
+    #key = null;
+    #view;
+    #retiring;
+    #controller;
+    #animation;
+    #scroll = new Map();
+    #onHistory = () => this.#route();
+    #onPageShow = event => {
+        if (event.persisted) this.#route(true);
+    };
+
+    /**
+     * 根视图始终保留；工厂按需提供子页，可用 signal 取消离开后的异步加载。
+     * Retain the home view and create details on demand; signal cancels async work after departure.
+     * @param {HTMLElement} container 由调用方布局的页面容器 / Caller-styled view container.
+     * @param {HTMLElement} home 已创建的主页节点 / Existing home view.
+     * @param {(key: string, signal: AbortSignal) => HTMLElement | undefined} create 子页工厂；未知路径返回 undefined / Detail factory; undefined for unknown routes.
+     */
+    constructor(container, home, create) {
+        super();
+        this.#container = container;
+        this.#home = home;
+        this.#create = create;
+        this.#window = container.ownerDocument.defaultView;
+        container.replaceChildren(home);
+        this.#window.addEventListener("popstate", this.#onHistory);
+        this.#window.addEventListener("hashchange", this.#onHistory);
+        this.#window.addEventListener("pageshow", this.#onPageShow);
+        this.#route();
+    }
+
+    /**
+     * 当前子页键；空字符串表示主页。
+     * Current detail key; empty means home.
+     */
+    get current() {
+        return this.#key;
+    }
+
+    /**
+     * 是否可以返回上一级或先前文档。
+     * Whether a parent view or previous document is available.
+     */
+    get canGoBack() {
+        return Boolean(this.#key) || this.#window.history.length > 1;
+    }
+
+    /**
+     * 加入模块或字段子页历史，保留路由中的层级分隔符。
+     * Push a module or field view while retaining route hierarchy separators.
+     * @param {string} key 子页键 / Detail key.
+     * @returns {void} 无返回值 / No return value.
+     */
+    open(key) {
+        if (key === this.#key) return;
+        const url = new URL(this.#window.location.href);
+        url.hash = key.split("/").map(encodeURIComponent).join("/");
+        this.#window.history.pushState({ ...this.#window.history.state, preferencePanesRoute: key }, "", url.href);
+        this.#route();
+    }
+
+    /**
+     * 沿文档历史返回，根页可退回上个文档。
+     * Go back through document history, including the previous document from home.
+     * @returns {void} 无返回值 / No return value.
+     */
+    back() {
+        if (this.canGoBack) this.#window.history.back();
+    }
+
+    /**
+     * 更新当前页的挂载视图，保留路由和滚动位置。
+     * Refresh the mounted view while retaining route and scroll position.
+     * @returns {void} 无返回值 / No return value.
+     */
+    refresh() {
+        this.#route(true);
+    }
+
+    /**
+     * 解析 URL 并统一处理页面切换、加载取消与动画结束后的释放。
+     * Resolve the URL and coordinate transitions, cancellation and release after animation.
+     * @param {boolean} [reload] 从页面缓存恢复时重新创建子页 / Recreate a detail after bfcache restoration.
+     * @returns {void} 无返回值 / No return value.
+     */
+    #route(reload = false) {
+        const url = new URL(this.#window.location.href);
+        let key;
+        try {
+            key = decodeURIComponent(url.hash.slice(1));
+        } catch (error) {
+            if (!(error instanceof URIError)) throw error;
+            key = "";
+        }
+        if (!reload && key === this.#key) return;
+        if (key !== this.#key) this.#scroll.set(this.#key, (this.#view ?? this.#home).scrollTop);
+        this.#controller?.abort();
+        this.#controller = new AbortController();
+        const next = key ? this.#create(key, this.#controller.signal) : undefined;
+        if (!next) key = "";
+        const history = this.#window.history;
+        // 直接打开字段页时补齐首页和模块历史；刷新不重复堆叠。
+        // Seed homepage and module history for direct field links without stacking on reload.
+        if (url.hash && history.state?.preferencePanesRoute !== key) {
+            url.hash = "";
+            history.replaceState({ ...history.state, preferencePanesRoute: "" }, "", url.href);
+            if (key) {
+                const module = key.split("/")[0];
+                if (key.includes("/") && module !== "$link") {
+                    url.hash = encodeURIComponent(module);
+                    history.pushState({ ...history.state, preferencePanesRoute: module }, "", url.href);
+                }
+                url.hash = key.split("/").map(encodeURIComponent).join("/");
+                history.pushState({ ...history.state, preferencePanesRoute: key }, "", url.href);
+            }
+        }
+        const previous = this.#view;
+        if (previous === next && this.#key === key) {
+            if (previous && this.#scroll.has(key)) {
+                previous.scrollTop = this.#scroll.get(key);
+                this.#scroll.delete(key);
+            }
+            this.dispatchEvent(new Event("change"));
+            return;
+        }
+        const scroll = this.#scroll.get(key) ?? (key === this.#key ? (previous?.scrollTop ?? 0) : 0);
+        const position = previous ? this.#window.getComputedStyle(previous).transform : "none";
+        this.#animation?.cancel();
+        this.#retiring?.remove();
+        this.#retiring = previous;
+        if (previous) {
+            previous.inert = true;
+        }
+        this.#key = key;
+        this.#view = next;
+        this.#home.inert = Boolean(next);
+        if (next) {
+            next.inert = false;
+            this.#container.append(next);
+            next.scrollTop = scroll;
+            // 加载占位页可能无法滚到原位置；配置与控件就绪后的 refresh 再恢复一次。
+            // A loading placeholder may clamp scrolling; restore once more when config and controls refresh.
+            if (next.scrollTop === scroll) this.#scroll.delete(key);
+        }
+        if (!next) {
+            this.#home.scrollTop = this.#scroll.get("") ?? 0;
+            this.#scroll.delete("");
+        }
+        const moving = next ?? previous;
+        if (moving) {
+            const animation = moving.animate([{ transform: next ? "translateX(100%)" : position }, { transform: next ? "translateX(0)" : "translateX(100%)" }], { duration: this.#window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280, easing: "cubic-bezier(.22,.61,.36,1)", fill: "forwards" });
+            this.#animation = animation;
+            animation.onfinish = () => {
+                if (this.#animation !== animation) return;
+                this.#retiring?.remove();
+                this.#retiring = undefined;
+                animation.cancel();
+                this.#animation = undefined;
+            };
+        }
+        this.dispatchEvent(new Event("change"));
+    }
+
+    /**
+     * 释放监听器、加载、动画和节点；调用方可重新创建导航。
+     * Release listeners, loads, animations and nodes so callers can recreate navigation.
+     * @returns {void} 无返回值 / No return value.
+     */
+    destroy() {
+        this.#window.removeEventListener("popstate", this.#onHistory);
+        this.#window.removeEventListener("hashchange", this.#onHistory);
+        this.#window.removeEventListener("pageshow", this.#onPageShow);
+        this.#controller?.abort();
+        this.#animation?.cancel();
+        this.#retiring?.remove();
+        this.#view?.remove();
+        this.#home.remove();
+    }
+}
+
+/**
+ * 校验原始路径片段，不进行 URL 编码转换。
+ * Validate raw path segments without URL encoding conversion.
+ * @param {string[]} parts 原始路径片段 / Raw path segments.
+ * @returns {string[]} 同一数组，不复制或修改 / The same array without copying or mutation.
+ * @throws {TypeError} 空片段、非法字符或原型属性名 / Empty segments, invalid characters or prototype property names.
+ */
+function validatePathParts(parts) {
+    if (!parts.every(part => typeof part === "string" && /^[a-zA-Z0-9_-]+$/.test(part) && !["__proto__", "prototype", "constructor"].includes(part))) throw new TypeError("Invalid key path");
+    return parts;
+}
+
+/**
+ * 将 BoxJS 数组、app 或订阅转换为浏览器字段定义。
+ * Normalize a BoxJS array, app or subscription into browser field definitions.
+ * @param {unknown} config 原始 BoxJS JSON / Raw BoxJS JSON.
+ * @param {string} [module] API 模块路径段；省略时要求输入只有一个模块 / API module path segment; omission requires exactly one module.
+ * @returns {import("../index.js").ModuleDefinition} 浏览器字段定义 / Browser field definition.
+ */
+function normalizeBoxJs(config, module) {
+    if (!config || typeof config !== "object") throw new TypeError("Expected BoxJS JSON");
+    const document = JSON.parse(JSON.stringify(config));
+    const apps = Array.isArray(document) ? [{ settings: document }] : (document.apps ?? [document]);
+    if (!Array.isArray(apps)) throw new TypeError("Expected BoxJS apps array");
+    const modules = new Map();
+    for (const app of apps) {
+        if (!app || !Array.isArray(app.settings)) throw new TypeError("Expected BoxJS settings array");
+        for (const entry of app.settings) {
+            if (typeof entry.id !== "string") throw new TypeError("BoxJS settings require string IDs");
+            entry.id = entry.id.replace(/\[(0|[1-9]\d*)\]$/, ".$1");
+            if (!entry.id.startsWith("@")) {
+                if (Array.isArray(document)) throw new TypeError("BoxJS settings require @root.path IDs");
+                continue;
+            }
+            const [storageKey, ...parts] = entry.id.slice(1).split(".");
+            if (!storageKey || storageKey.startsWith("@") || parts.length < 2) throw new TypeError("A BoxJS setting must be below a literal storage root and module");
+            validatePathParts(parts);
+            const name = parts[0];
+            if (["get", "set", "delete"].includes(name)) throw new TypeError(`Reserved API module name: ${name}`);
+            let target = modules.get(name);
+            if (!target) {
+                target = { module: name, storageKey, entries: [], owners: new Set() };
+                modules.set(name, target);
+            }
+            if (target.storageKey !== storageKey) throw new TypeError(`A module must use one storage root: ${name}`);
+            target.entries.push(entry);
+            target.owners.add(app);
+        }
+    }
+    if (modules.size !== 1) throw new TypeError("Import BoxJS JSON for exactly one module");
+    const target = module === undefined ? modules.values().next().value : modules.get(module);
+    if (!target) throw new TypeError(`No BoxJS settings for module: ${module}`);
+    const metadata = normalizeMetadata(target.owners.size === 1 ? presentation([...target.owners][0]) : {});
+    const fields = [];
+    for (const entry of target.entries) {
+        const parts = entry.id.slice(1).split(".").slice(1);
+        const type = { boolean: "boolean", checkboxes: "array", selects: "select", text: "string", textarea: "string", url: "string", number: "number" }[entry.type];
+        if (!type) throw new TypeError(`Unsupported BoxJS control: ${entry.type}`);
+        const field = {
+            key: parts.join("."),
+            type: type === "select" ? typeof entry.val : type,
+
+            name: entry.name,
+            description: entry.desc ?? "",
+            control: entry.type,
+            ...(entry.placeholder === undefined ? {} : { placeholder: entry.placeholder }),
+            ...(entry.rows === undefined ? {} : { rows: entry.rows }),
+            ...(entry.autoGrow === undefined ? {} : { autoGrow: entry.autoGrow }),
+        };
+        if (type === "select" && !["string", "number", "boolean"].includes(field.type)) throw new TypeError(`Select requires a scalar val: ${entry.id}`);
+        if (entry.items) field.options = entry.items.map(item => ({ key: item.key, label: item.label }));
+        if (Object.prototype.hasOwnProperty.call(entry, "val")) field.defaultValue = normalizeStoredValue(field, entry.val);
+        if (
+            typeof field.name !== "string" ||
+            (field.placeholder !== undefined && typeof field.placeholder !== "string") ||
+            (field.rows !== undefined && (!Number.isInteger(field.rows) || field.rows < 1)) ||
+            (field.autoGrow !== undefined && typeof field.autoGrow !== "boolean") ||
+            fields.some(other => other.key === field.key || other.key.startsWith(`${field.key}.`) || field.key.startsWith(`${other.key}.`))
+        )
+            throw new TypeError(`Invalid or overlapping BoxJS field: ${entry.id}`);
+        if (field.options && (new Set(field.options.map(item => item.key)).size !== field.options.length || field.options.some(item => !scalar(item.key) || typeof item.label !== "string"))) throw new TypeError(`Invalid options: ${entry.id}`);
+        if (Object.prototype.hasOwnProperty.call(field, "defaultValue") && !validValue(field, field.defaultValue)) throw new TypeError(`Invalid BoxJS val: ${entry.id}`);
+        if (field.control === "url" && !Object.prototype.hasOwnProperty.call(field, "defaultValue")) throw new TypeError(`URL BoxJS settings require a val: ${entry.id}`);
+        fields.push(field);
+    }
+    if (!fields.length) throw new TypeError(`No BoxJS settings for module: ${target.module}`);
+    for (const field of fields) {
+        const indexed = /^(.*)\.(\d+)$/.exec(field.key);
+        if (!indexed) continue;
+        const siblings = fields.filter(candidate => candidate.key.startsWith(`${indexed[1]}.`) && /^\d+$/.test(candidate.key.slice(indexed[1].length + 1)));
+        if (fields.some(candidate => candidate.key.startsWith(`${indexed[1]}.`) && !siblings.includes(candidate))) throw new TypeError(`Indexed settings cannot mix array entries and named children: ${indexed[1]}`);
+        if (siblings.some(candidate => !Object.prototype.hasOwnProperty.call(candidate, "defaultValue")) || !siblings.some(candidate => candidate.key === `${indexed[1]}.${siblings.length - 1}`) || siblings.some(candidate => Number(candidate.key.slice(indexed[1].length + 1)) >= siblings.length))
+            throw new TypeError(`Indexed settings require contiguous indices and defaults: ${indexed[1]}`);
+    }
+    const owner = target.owners.size === 1 ? [...target.owners][0] : undefined;
+    const cachePath = owner?.cachePath ?? `@${target.storageKey}.${target.module}.Caches`;
+    if (typeof cachePath !== "string" || !cachePath.startsWith(`@${target.storageKey}.`)) throw new TypeError("cachePath must use the module storage root");
+    const cacheParts = validatePathParts(cachePath.slice(target.storageKey.length + 2).split("."));
+    if (cacheParts.length !== 2 || cacheParts[1] !== "Caches") throw new TypeError("cachePath must identify a module Caches subtree");
+    if (owner?.resetPaths !== undefined) {
+        if (!Array.isArray(owner.resetPaths) || !owner.resetPaths.length) throw new TypeError("resetPaths must be a nonempty array");
+        for (const path of owner.resetPaths) {
+            if (typeof path !== "string" || !path.startsWith(`@${target.storageKey}.${target.module}.Settings.`)) throw new TypeError("resetPaths must stay in this module's Settings");
+            validatePathParts(path.slice(target.storageKey.length + 2).split("."));
+        }
+        if (fields.some(field => !owner.resetPaths.some(path => `@${target.storageKey}.${field.key}` === path || `@${target.storageKey}.${field.key}`.startsWith(`${path}.`)))) throw new TypeError("resetPaths must cover the page settings");
+    }
+    const firstIndexed = /^(.*)\.(\d+)$/.exec(fields[0].key);
+    const common = (firstIndexed ? firstIndexed[1] : fields[0].key).split(".").slice(0, -1);
+    for (const field of fields) while (!field.key.startsWith(`${common.join(".")}.`)) common.pop();
+    return {
+        module: target.module,
+        storageKey: target.storageKey,
+        fields,
+        settingsPath: common,
+        ...(owner?.cachePath === undefined ? {} : { cachePath }),
+        ...(owner?.resetPaths === undefined ? {} : { resetPaths: [...owner.resetPaths] }),
+        ...(Object.keys(metadata).length ? { metadata } : {}),
+    };
+}
+
+/**
+ * 保留字段所属 app 的原始展示信息。
+ * Retain raw presentation metadata from the app owning the fields.
+ * @param {object} source BoxJS app / BoxJS app.
+ * @returns {Record<string, unknown>} 原始展示信息 / Raw presentation metadata.
+ */
+function presentation(source) {
+    const result = {};
+    for (const key of ["id", "name", "author", "repo", "script", "icon", "description", "desc", "icons", "descs"]) {
+        if (source[key] === undefined) continue;
+        result[key] = source[key];
+    }
+    return result;
+}
+
+/**
+ * 校验供浏览器展示的标准 BoxJS 元数据。
+ * Validate standard BoxJS metadata used by the browser renderer.
+ * @param {Record<string, unknown>} source 原始展示元数据 / Raw presentation metadata.
+ * @returns {import("../index.js").BoxJSMetadata} 规范化展示元数据 / Normalized presentation metadata.
+ */
+function normalizeMetadata(source) {
+    const result = {};
+    for (const [key, value] of Object.entries(source)) {
+        const multiple = key === "icons" || key === "descs";
+        const values = multiple ? value : [value];
+        if (!Array.isArray(values) || values.some(item => typeof item !== "string")) throw new TypeError(`Invalid BoxJS app ${key}`);
+        result[key] = multiple ? [...values] : value;
+    }
+    return result;
+}
+
+/**
+ * 归一化 BoxJS 的字符串存储值，不改变普通文本内容。
+ * Normalize BoxJS string persistence without changing free-text values.
+ * @param {import("../index.js").SettingsField} field 前端字段约束 / Frontend field constraints.
+ * @param {unknown} value 存储值 / Stored value.
+ * @returns {unknown} 转换后的控件值；是否允许写入由 validValue 单独校验 / Converted control value; write eligibility is checked separately by validValue.
+ */
+function normalizeStoredValue(field, value) {
+    switch (field.type) {
+        case "boolean":
+            if (value === "true" || value === "false") return value === "true";
+            break;
+        case "number":
+            if (typeof value === "string" && value.trim() !== "") return Number(value);
+            break;
+        case "array":
+            if (typeof value === "string") value = value === "" || value === "[]" ? [] : value.split(",");
+            break;
+    }
+    if (field.options) {
+        const match = item => field.options.find(option => String(option.key) === String(item))?.key ?? item;
+        return field.type === "array" && Array.isArray(value) ? value.map(match) : match(value);
+    }
+    return value;
+}
+
+/**
+ * 校验支持的标量范围，包括文本长度与数值有限性。
+ * Validate supported scalar bounds, including text length and numeric finiteness.
+ * @param {unknown} value 待检查值 / Value to inspect.
+ * @returns {boolean} 是否为有效标量 / Whether the scalar is valid.
+ */
+function scalar(value) {
+    switch (typeof value) {
+        case "boolean":
+            return true;
+        case "string":
+            return value.length <= 2048;
+        case "number":
+            return Number.isFinite(value);
+        default:
+            return false;
+    }
+}
+
+/**
+ * 检查值类型与数组结构，不检查选项是否仍在当前配置中。
+ * Check value type and array structure without requiring current option membership.
+ * @param {import("../index.js").SettingsField} field 前端归一化字段 / Normalized frontend field.
+ * @param {unknown} value 待检查值 / Value to inspect.
+ * @returns {boolean} 是否可由控件表示 / Whether the control can represent the value.
+ */
+function validValueShape(field, value) {
+    switch (field.type) {
+        case "array":
+            if (!Array.isArray(value) || value.some(item => !scalar(item)) || new Set(value).size !== value.length) return false;
+            break;
+        default:
+            if (typeof value !== field.type || !scalar(value)) return false;
+            break;
+    }
+    if (field.control === "url" && (!/^[a-z][a-z\d+.-]*:/i.test(value) || /^(?:javascript|data|vbscript):/i.test(value))) return false;
+    return true;
+}
+
+/**
+ * 返回当前配置未声明的选项值。
+ * Return option values absent from the current definition.
+ * @param {import("../index.js").SettingsField} field 前端归一化字段 / Normalized frontend field.
+ * @param {unknown} value 已确认结构有效的值 / Value with a valid shape.
+ * @returns {unknown[]} 未定义值 / Undefined values.
+ */
+function undefinedOptions(field, value) {
+    if (!field.options) return [];
+    return (field.type === "array" ? value : [value]).filter(item => !field.options.some(option => option.key === item));
+}
+
+/**
+ * 将外部存储值解析为可渲染值，并把兼容性问题作为字段级警告返回。
+ * Resolve external storage into a renderable value and return compatibility issues as field warnings.
+ * @param {import("../index.js").SettingsField} field 前端归一化字段 / Normalized frontend field.
+ * @param {unknown} stored 外部存储值 / External stored value.
+ * @returns {{value?: unknown, warning?: {kind: "invalid-value" | "undefined-options", values: unknown[]}}} 解析结果 / Resolution result.
+ */
+function resolveStoredValue(field, stored) {
+    if (field.control === "url") return { value: field.defaultValue };
+    const value = normalizeStoredValue(field, stored === undefined ? field.defaultValue : stored);
+    if (value === undefined) return {};
+    if (!validValueShape(field, value)) {
+        return {
+            ...(Object.prototype.hasOwnProperty.call(field, "defaultValue") ? { value: field.defaultValue } : {}),
+            warning: { kind: "invalid-value", values: [stored] },
+        };
+    }
+    const undefinedValues = undefinedOptions(field, value);
+    return { value, ...(undefinedValues.length ? { warning: { kind: "undefined-options", values: undefinedValues } } : {}) };
+}
+
+/**
+ * 严格检查写入值的类型、数组唯一性及声明选项。
+ * Strictly check a write value's type, array uniqueness, and declared options.
+ * @param {import("../index.js").SettingsField} field 前端归一化字段 / Normalized frontend field.
+ * @param {unknown} value 待写入的 JSON 值 / JSON value to write.
+ * @returns {boolean} 是否允许写入 / Whether the value may be written.
+ */
+function validValue(field, value) {
+    return validValueShape(field, value) && undefinedOptions(field, value).length === 0;
+}
+
+/**
+ * 创建元素，所有展示文本通过 textContent 写入。
+ * Create elements and assign display text through textContent only.
+ * @template {keyof HTMLElementTagNameMap} T
+ * @param {T} tag 元素标签 / Element tag.
+ * @param {string} className 样式类名 / CSS class.
+ * @param {string} [text] 纯文本 / Plain text.
+ * @returns {HTMLElementTagNameMap[T]} 创建的元素 / Created element.
+ */
+function element(tag, className, text) {
+    const node = document.createElement(tag);
+    node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+}
+
+/**
+ * 创建通用设置行；外部 CSS 可通过 pp 类名覆盖视觉样式。
+ * Create a generic settings row whose appearance can be overridden through pp classes.
+ * @template {"div" | "label"} T
+ * @param {T} tag 行元素 / Row element.
+ * @returns {HTMLElementTagNameMap[T]} 设置行 / Settings row.
+ */
+function settingRow(tag) {
+    return element(tag, "pp-row");
+}
+
+/**
+ * 为标准 HTML 输入控件添加通用面板类名。
+ * Add the generic panel class to a standard HTML input control.
+ * @param {HTMLElement} control 已创建的原生控件 / Existing native control.
+ * @returns {HTMLElement} 输入控件 / Input control.
+ */
+function fieldControl(control) {
+    control.classList.add("pp-editor");
+    return control;
+}
+
+/**
+ * 创建覆盖可用内容区的通用读取状态，失败时可附加重试动作。
+ * Create a shared status view that fills the available content area and may include retry.
+ * @param {string} message 状态文本 / Status message.
+ * @param {(() => unknown) | undefined} [retry] 重试动作 / Retry action.
+ * @returns {HTMLElement} 居中状态视图 / Centered status view.
+ */
+function statusView(message, retry) {
+    const view = element("section", "pp-status");
+    view.setAttribute("role", "status");
+    view.setAttribute("aria-live", "polite");
+    const spinner = element("span", "pp-status-spinner");
+    spinner.setAttribute("aria-hidden", "true");
+    view.append(spinner, element("p", "pp-status-message", message));
+    if (retry) {
+        const button = element("button", "pp-status-action", "重新读取");
+        button.type = "button";
+        button.onclick = retry;
+        view.append(button);
+    }
+    return view;
+}
+
+/**
+ * 管理单模块页面的 API 请求、值快照和会话终止。
+ * Manage API requests, value snapshots, and session termination for one module page.
+ */
+class PreferencesClient {
+    #module;
+    #definition;
+    #request;
+    #notify;
+    #timeout;
+    #session = new AbortController();
+    #values = {};
+    #warnings = {};
+    #saving = false;
+    #arrays = new Map();
+
+    /**
+     * 创建从 BoxJS 定义读取和持久化设置的页面客户端。
+     * Create a page client that reads and persists settings from a BoxJS definition.
+     * @param {import("./client.mjs").PreferencesClientOptions} options 字段定义、请求与通知 / Field definition, requests, and notifications.
+     */
+    constructor({ definition, fetch: request = globalThis.fetch.bind(globalThis), notify = () => {}, timeout = 10000 }) {
+        this.#module = definition.module;
+        this.#definition = definition;
+        this.#request = request;
+        this.#notify = notify;
+        this.#timeout = timeout;
+    }
+
+    /**
+     * 读取一次 Settings 子树并建立页面值快照。
+     * Read the Settings subtree once and establish the page value snapshot.
+     * @returns {Promise<import("./client.mjs").ModuleSnapshot>} 页面快照 / Page snapshot.
+     */
+    async open() {
+        let subtree = await this.readSettings();
+        if (subtree === undefined) subtree = {};
+        if (typeof subtree === "string") subtree = JSON.parse(subtree);
+        if (!subtree || typeof subtree !== "object" || Array.isArray(subtree)) throw new TypeError("Expected a settings subtree object");
+        const values = {};
+        const warnings = {};
+        this.#arrays.clear();
+        for (const field of this.#definition.fields) {
+            const indexed = /^(.*)\.(\d+)$/.exec(field.key);
+            if (indexed && !this.#arrays.has(indexed[1])) {
+                const storedArray = indexed[1]
+                    .split(".")
+                    .slice(this.#definition.settingsPath.length)
+                    .reduce((parent, part) => Object(parent)[part], subtree);
+                this.#arrays.set(indexed[1], Array.isArray(storedArray) ? [...storedArray] : []);
+            }
+            const stored = field.key
+                .split(".")
+                .slice(this.#definition.settingsPath.length)
+                .reduce((parent, part) => Object(parent)[part], subtree);
+            const resolved = resolveStoredValue(field, stored);
+            if (Object.prototype.hasOwnProperty.call(resolved, "value")) values[field.key] = resolved.value;
+            if (resolved.warning) warnings[field.key] = resolved.warning;
+        }
+        this.#values = values;
+        this.#warnings = warnings;
+        return this.snapshot();
+    }
+
+    /**
+     * 获取当前字段定义和值的深拷贝，不发起网络请求。
+     * Return a deep copy of the current field definition and values without a network request.
+     * @returns {import("./client.mjs").ModuleSnapshot} 会话快照 / Session snapshot.
+     */
+    snapshot() {
+        return JSON.parse(JSON.stringify({ definition: this.#definition, values: this.#values, warnings: this.#warnings }));
+    }
+
+    /**
+     * 读取 Settings 子树。
+     * Read the Settings subtree.
+     * @returns {Promise<unknown>} Settings 内容或 undefined / Settings content or undefined.
+     */
+    async readSettings() {
+        const response = await this.#send("get", `@${this.#definition.storageKey}.${this.#definition.settingsPath.join(".")}`);
+        return response.status === 404 ? undefined : response.json();
+    }
+
+    /**
+     * 读取 Caches 子树。
+     * Read the Caches subtree.
+     * @returns {Promise<unknown>} Caches 内容或 undefined / Caches content or undefined.
+     */
+    async readCaches() {
+        const response = await this.#send("get", this.#definition.cachePath ?? `@${this.#definition.storageKey}.${this.#module}.Caches`);
+        return response.status === 404 ? undefined : response.json();
+    }
+
+    /**
+     * 删除声明的缓存子树，默认当前模块 Caches。
+     * Delete the declared cache subtree, defaulting to the current module Caches.
+     * @returns {Promise<void>} 操作完成 / Operation completion.
+     */
+    clearCaches() {
+        const path = this.#definition.cachePath?.slice(this.#definition.storageKey.length + 2) ?? `${this.#module}.Caches`;
+        return this.#change("delete", path, undefined, "clearCaches");
+    }
+
+    /**
+     * 删除声明的设置子树，默认删除当前模块数据，并恢复页面默认值。
+     * Delete declared settings subtrees, defaulting to current module data, and restore page defaults.
+     * @returns {Promise<void>} 操作完成 / Operation completion.
+     */
+    reset() {
+        return this.#change("delete", this.#module, undefined, "reset");
+    }
+
+    /**
+     * 终止当前页面的读取；已开始的持久化写入继续完成。
+     * Abort reads owned by the current page while allowing started persistence writes to finish.
+     * @returns {void} 无返回值 / No return value.
+     */
+    leave() {
+        this.#session.abort();
+    }
+
+    /**
+     * 写入单个字段。
+     * Write one field.
+     * @param {string} key 字段路径 / Field path.
+     * @param {unknown} value 已校验值 / Validated value.
+     * @returns {Promise<void>} 操作完成 / Operation completion.
+     */
+    set(key, value) {
+        return this.#change("set", key, value, "write");
+    }
+
+    /**
+     * 删除单个字段覆盖值。
+     * Delete one field override.
+     * @param {string} key 字段路径 / Field path.
+     * @returns {Promise<void>} 操作完成 / Operation completion.
+     */
+    remove(key) {
+        return this.#change("delete", key, undefined, "delete");
+    }
+
+    /**
+     * 向固定存储 API 发送完整路径的 form 动作。
+     * Send a complete-path form action to the fixed storage API.
+     * @param {"get" | "set" | "delete"} action 存储动作 / Storage action.
+     * @param {string} path 完整 @root.path / Complete @root.path.
+     * @param {unknown} [value] set 写入值 / Value written by set.
+     * @returns {Promise<Response>} 原始响应 / Raw response.
+     */
+    async #send(action, path, value) {
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        if (action === "get") {
+            if (this.#session.signal.aborted) abort();
+            this.#session.signal.addEventListener("abort", abort, { once: true });
+        }
+        const timer = setTimeout(abort, this.#timeout);
+        try {
+            const response = await this.#request(`/api/${action}`, {
+                method: "POST",
+                credentials: "omit",
+                cache: "no-store",
+                signal: controller.signal,
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams([[path, action === "set" ? JSON.stringify(value) : ""]]).toString(),
+            });
+            if (response.status !== 200 && !(action === "get" && response.status === 404)) throw new Error(`HTTP ${response.status}`);
+            return response;
+        } finally {
+            clearTimeout(timer);
+            this.#session.signal.removeEventListener("abort", abort);
+        }
+    }
+
+    /**
+     * 执行写入动作；成功后只更新当前页面值。
+     * Execute a mutation and update only the current page values after success.
+     * @param {"set" | "delete"} action API 动作 / API action.
+     * @param {string} key 不含存储根的路径 / Path without the storage root.
+     * @param {unknown} value set 写入值 / Value written by set.
+     * @param {"write" | "delete" | "clearCaches" | "reset"} operation 通知操作 / Notification operation.
+     * @returns {Promise<void>} 操作完成 / Operation completion.
+     */
+    async #change(action, key, value, operation) {
+        if (this.#saving) throw new Error("A settings write is already in progress");
+        this.#saving = true;
+        try {
+            switch (operation) {
+                case "write":
+                case "delete": {
+                    const field = this.#definition.fields.find(candidate => candidate.key === key);
+                    if (!field || (operation === "write" && !validValue(field, value))) throw new TypeError("Invalid setting value");
+                    const indexed = /^(.*)\.(\d+)$/.exec(key);
+                    if (indexed) {
+                        const array = [...(this.#arrays.get(indexed[1]) ?? [])];
+                        for (const sibling of this.#definition.fields) {
+                            if (sibling.key.startsWith(`${indexed[1]}.`) && /^\d+$/.test(sibling.key.slice(indexed[1].length + 1))) {
+                                const index = Number(sibling.key.slice(indexed[1].length + 1));
+                                if (array[index] === undefined) array[index] = this.#values[sibling.key] ?? sibling.defaultValue;
+                            }
+                        }
+                        array[Number(indexed[2])] = operation === "delete" ? field.defaultValue : value;
+                        await this.#send("set", `@${this.#definition.storageKey}.${indexed[1]}`, array);
+                        this.#arrays.set(indexed[1], array);
+                    } else await this.#send(action, `@${this.#definition.storageKey}.${key}`, value);
+                    switch (operation) {
+                        case "write":
+                            this.#values[key] = JSON.parse(JSON.stringify(value));
+                            delete this.#warnings[key];
+                            break;
+                        case "delete":
+                            delete this.#values[key];
+                            delete this.#warnings[key];
+                            if (Object.prototype.hasOwnProperty.call(field, "defaultValue")) this.#values[key] = JSON.parse(JSON.stringify(field.defaultValue));
+                            break;
+                    }
+                    break;
+                }
+                case "clearCaches":
+                    await this.#send(action, `@${this.#definition.storageKey}.${key}`, value);
+                    break;
+                case "reset":
+                    if (this.#definition.resetPaths) {
+                        for (const path of this.#definition.resetPaths) await this.#send("delete", path);
+                    } else await this.#send(action, `@${this.#definition.storageKey}.${key}`, value);
+                    this.#arrays.clear();
+                    this.#warnings = {};
+                    for (const field of this.#definition.fields) {
+                        delete this.#values[field.key];
+                        if (Object.prototype.hasOwnProperty.call(field, "defaultValue")) this.#values[field.key] = JSON.parse(JSON.stringify(field.defaultValue));
+                    }
+                    break;
+            }
+            this.#notify({ kind: "success", operation, module: this.#module, key });
+        } catch (error) {
+            this.#notify({ kind: "error", operation, module: this.#module, key, message: error.message });
+            throw error;
+        } finally {
+            this.#saving = false;
+        }
+    }
+}
+
+/**
+ * 将字段级存储诊断转换为简短提示。
+ * Convert a field-level storage diagnostic into concise display text.
+ * @param {import("./client.mjs").StoredValueWarning} warning 存储警告 / Storage warning.
+ * @returns {string} 用户可见提示 / User-visible warning.
+ */
+function warningMessage(warning) {
+    const values = warning.values
+        .map(value => {
+            if (typeof value === "string") return value;
+            return JSON.stringify(value) ?? String(value);
+        })
+        .join("、");
+    return warning.kind === "undefined-options" ? `当前配置未定义值：${values}` : `当前存储值格式不受支持：${values}`;
+}
+
+/**
+ * 管理模块表单、操作队列和设置会话。
+ * Manage the module form, operation queue and settings session.
+ */
+class PreferencesPanel {
+    #release;
+    #view;
+    #state;
+    #perform;
+
+    /**
+     * 挂载 BoxJS 定义对应的模块表单。
+     * Mount the module form described by a BoxJS definition.
+     * @param {HTMLElement} root 包内挂载元素 / Internal mount element.
+     * @param {import("../index.js").ModuleDefinition} definition 已规范化字段定义 / Normalized field definition.
+     * @param {import("./page.mjs").PageController} page 内部页面控制器 / Internal page controller.
+     */
+    constructor(root, definition, page) {
+        this.#release = this.#mount(root, definition, page);
+    }
+
+    /**
+     * 建立面板 DOM、交互和会话，并返回其释放操作。
+     * Build panel DOM, interactions, and session, then return its release operation.
+     * @param {HTMLElement} root 包内挂载元素 / Internal mount element.
+     * @param {import("../index.js").ModuleDefinition} definition 已规范化字段定义 / Normalized field definition.
+     * @param {import("./page.mjs").PageController} page 内部页面控制器 / Internal page controller.
+     * @returns {() => void} 释放操作 / Release operation.
+     */
+    #mount(root, definition, page) {
+        const title = definition.metadata?.name ?? definition.module;
+        const document = root.ownerDocument;
+        const window = document.defaultView;
+        const shell = element("div", "pp-panel");
+        shell.dataset.module = definition.module;
+        const handlers = new Map();
+        const menuItems = [
+            { id: "viewSettings", label: "查看设置" },
+            { id: "viewCaches", label: "查看缓存" },
+            { id: "clearCaches", label: "清空缓存", destructive: true },
+            { id: "reset", label: "重置设置", destructive: true },
+        ];
+        const viewport = element("div", "pp-viewport");
+        shell.append(viewport);
+        root.append(shell);
+        const editors = new Map();
+        this.#view = key => {
+            const editor = editors.get(key);
+            editor?.load?.();
+            return editor?.node ?? root;
+        };
+        this.#state = key => ({ title: editors.get(key)?.title ?? title, actions: handlers.size ? menuItems : [], busy: saving });
+        this.#perform = id => {
+            if (!saving && handlers.has(id)) runAction(id);
+        };
+        const publishNavigation = () => {
+            if (!destroyed) page.update();
+        };
+        let generation = 0,
+            active = null,
+            saving = false,
+            destroyed = false;
+        /**
+         * 展示短暂通知，不刷新设置数据。
+         * Display a transient notification without refreshing settings.
+         * @param {{kind: "success" | "error", operation?: "write" | "delete" | "clearCaches" | "reset", message?: string}} event 操作结果 / Operation result.
+         * @returns {void} 无返回值 / No return value.
+         */
+        const notify = event => {
+            if (destroyed) return;
+            let message;
+            switch (event.kind === "error" ? "error" : event.operation) {
+                case "error":
+                    message = `操作失败：${event.message}`;
+                    break;
+                case "delete":
+                    message = "删除成功";
+                    break;
+                case "clearCaches":
+                    message = "Caches 已清空";
+                    break;
+                case "reset":
+                    message = "设置已重置";
+                    break;
+                default:
+                    message = "修改成功";
+                    break;
+            }
+            page.notice({ kind: event.kind, message });
+        };
+        const client = new PreferencesClient({ definition, notify });
+        /**
+         * 菜单操作统一处理异步错误，包含宿主确认框错误。
+         * Handle asynchronous action errors, including host-dialog errors.
+         * @param {string} id 操作标识 / Action identifier.
+         * @returns {Promise<void>} 操作已处理 / Action handled.
+         */
+        async function runAction(id) {
+            try {
+                await handlers.get(id)();
+            } catch (error) {
+                notify({ kind: "error", message: error.message });
+            }
+        }
+        /**
+         * 打开模块并忽略已过期的异步结果。
+         * Open a module and ignore stale asynchronous results.
+         * @param {string} module 模块标识 / Module identifier.
+         * @returns {Promise<void>} 视图加载完成，失败显示错误视图 / View load completion; failures display an error view.
+         */
+        async function open(module) {
+            const version = ++generation;
+            active = module;
+            publishNavigation();
+            viewport.replaceChildren(statusView("读取设置…"));
+            try {
+                await client.open();
+                if (version === generation) controls();
+            } catch (error) {
+                if (version !== generation) return;
+                viewport.replaceChildren(statusView(`加载失败：${error.message}`, () => open(module)));
+                publishNavigation();
+            }
+        }
+        /**
+         * 从会话快照创建控件与操作按钮，不重新读取网络配置。
+         * Build controls and actions from the session snapshot without fetching config again.
+         * @returns {void} 无返回值 / No return value.
+         */
+        function controls() {
+            const { definition, values } = client.snapshot();
+            const view = element("section", "pp-fields");
+            /**
+             * 挂载后执行的多行高度更新
+             * Textarea sizing callbacks run after mounting.
+             * @type {Array<() => void>}
+             */
+            const growingInputs = [];
+            editors.clear();
+            const summaries = [];
+            const warningRefreshers = [];
+            const groups = new Map();
+            let queue = Promise.resolve(),
+                pendingWrites = 0;
+            /**
+             * 串行执行模块操作，保持输入可编辑。
+             * Serialize module actions while keeping inputs editable.
+             * @param {() => Promise<void>} action 请求或写入 / Request or mutation.
+             * @param {() => void} success 成功后的局部更新 / Local update after success.
+             * @param {() => void} [failure] 失败后恢复当前输入 / Restore the current input on failure.
+             * @returns {Promise<void>} 操作完成 / Operation completion.
+             */
+            function perform(action, success, failure = () => {}) {
+                pendingWrites++;
+                saving = true;
+                publishNavigation();
+                queue = queue
+                    .then(action)
+                    .then(() => {
+                        if (!destroyed) success();
+                    })
+                    .catch(() => {
+                        /* 请求层已通知错误。
+                         * The request layer has already reported the error. */
+                        if (!destroyed) failure();
+                    })
+                    .finally(() => {
+                        pendingWrites--;
+                        saving = pendingWrites > 0;
+                        publishNavigation();
+                    });
+                return queue;
+            }
+            for (const field of definition.fields) {
+                const match = /^\[([^\]]+)\]\s*(.*)$/.exec(field.name);
+                const group = match?.[1] ?? "通用";
+                if (!groups.has(group)) {
+                    const section = element("section", "pp-group");
+                    const rows = element("div", "pp-rows");
+                    section.append(element("h2", "pp-group-title", group), rows);
+                    groups.set(group, rows);
+                    view.append(section);
+                }
+                const row = settingRow("div");
+                row.classList.add("pp-field");
+                const label = element("div", "pp-label");
+                label.append(element("span", "pp-field-name", match?.[2] ?? field.name));
+                if (field.description) label.append(element("span", "pp-field-description", field.description));
+                const warning = element("span", "pp-field-warning");
+                const refreshWarning = () => {
+                    const issue = client.snapshot().warnings[field.key];
+                    warning.hidden = !issue;
+                    warning.textContent = issue ? warningMessage(issue) : "";
+                };
+                warningRefreshers.push(refreshWarning);
+                refreshWarning();
+                label.append(warning);
+                row.append(label);
+                const value = values[field.key];
+                /**
+                 * 读取尚未保存的输入
+                 * Read the unsaved input.
+                 * @type {() => unknown}
+                 */
+                let read;
+                /**
+                 * 更新当前控件
+                 * Update the current control.
+                 * @type {(value: unknown) => void}
+                 */
+                let write;
+                let inputContainer = row;
+                let eventName = "change";
+                switch (field.control === "url" ? "url" : field.options ? (field.type === "array" ? "checkboxes" : "selects") : field.type) {
+                    case "url": {
+                        const link = element("a", "pp-choice-link", "打开");
+                        link.setAttribute("aria-label", field.name);
+                        link.rel = "noopener noreferrer";
+                        write = value => {
+                            link.href = value;
+                        };
+                        link.addEventListener("click", event => {
+                            event.preventDefault();
+                            page.openURL(link.href);
+                        });
+                        row.append(link);
+                        row.addEventListener("click", event => {
+                            if (!link.contains(event.target)) link.click();
+                        });
+                        break;
+                    }
+                    case "selects": {
+                        const select = element("select", "");
+                        select.setAttribute("aria-label", field.name);
+                        field.options.forEach((option, index) => {
+                            const item = element("option", "", option.label);
+                            item.value = String(index);
+                            select.append(item);
+                        });
+                        write = value => {
+                            select.selectedIndex = field.options.findIndex(option => option.key === value);
+                        };
+                        row.append(fieldControl(select));
+                        read = () => field.options[select.selectedIndex]?.key;
+                        break;
+                    }
+                    case "checkboxes": {
+                        const editor = element("section", "pp-panel pp-detail pp-choice-page");
+                        if (field.description) editor.append(element("p", "pp-description", field.description));
+                        const choices = element("div", "pp-rows");
+                        editor.append(choices);
+                        inputContainer = choices;
+                        editors.set(field.key, { node: editor, title: match?.[2] ?? field.name });
+                        const summary = element("span", "pp-summary");
+                        const link = element("button", "pp-choice-link");
+                        link.type = "button";
+                        link.setAttribute("aria-label", field.name);
+                        link.append(summary, element("span", "pp-chevron", "›"));
+                        row.append(link);
+                        const refresh = () => {
+                            const value = client.snapshot().values[field.key];
+                            summary.textContent =
+                                field.options
+                                    .filter(option => Array.isArray(value) && value.includes(option.key))
+                                    .map(option => option.label)
+                                    .join("、") || "未选择";
+                        };
+                        summaries.push(refresh);
+                        refresh();
+                        link.onclick = () => page.open(field.key);
+                        row.addEventListener("click", event => {
+                            if (!link.contains(event.target)) link.click();
+                        });
+                        const inputs = field.options.map(option => {
+                            const label = settingRow("label");
+                            label.classList.add("pp-choice");
+                            label.textContent = option.label;
+                            const input = element("input", "");
+                            input.type = "checkbox";
+                            input.setAttribute("aria-label", option.label);
+                            label.append(input);
+                            choices.append(label);
+                            return { input, key: option.key };
+                        });
+                        read = () => inputs.filter(option => option.input.checked).map(option => option.key);
+                        write = value => {
+                            for (const option of inputs) option.input.checked = Array.isArray(value) && value.includes(option.key);
+                        };
+                        break;
+                    }
+                    case "boolean": {
+                        const toggle = element("input", "pp-switch");
+                        toggle.type = "checkbox";
+                        toggle.setAttribute("switch", "");
+                        toggle.setAttribute("role", "switch");
+                        toggle.setAttribute("aria-label", field.name);
+                        write = value => {
+                            toggle.checked = value === true;
+                        };
+                        read = () => toggle.checked;
+                        row.append(toggle);
+                        break;
+                    }
+                    default: {
+                        const multiline = field.control === "textarea" || field.type === "array";
+                        const input = element(multiline ? "textarea" : "input", "");
+                        if (multiline) row.classList.add("pp-multiline");
+                        input.setAttribute("aria-label", field.name);
+                        if (field.placeholder) input.placeholder = field.placeholder;
+                        if (multiline && field.rows) input.rows = field.rows;
+                        /**
+                         * 在挂载后根据内容调整高度，同时保留基础行数。
+                         * Size mounted textareas to their contents while retaining baseline rows.
+                         * @returns {void} 无返回值 / No return value.
+                         */
+                        const grow = () => {
+                            if (!multiline || !field.autoGrow || !input.isConnected) return;
+                            input.style.height = "auto";
+                            const baseline = input.getBoundingClientRect().height;
+                            const style = window.getComputedStyle(input);
+                            const borders = Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+                            input.style.height = `${Math.max(baseline, input.scrollHeight + borders)}px`;
+                        };
+                        if (multiline && field.autoGrow) {
+                            input.addEventListener("input", grow);
+                            growingInputs.push(grow);
+                        }
+                        eventName = "input";
+                        if (!multiline) {
+                            input.type = field.type === "number" ? "number" : "text";
+                            input.autocapitalize = "off";
+                            input.setAttribute("autocorrect", "off");
+                            input.spellcheck = false;
+                        }
+                        write = value => {
+                            input.value = field.type === "array" ? JSON.stringify(value ?? []) : (value ?? "");
+                            grow();
+                        };
+                        read = () => {
+                            switch (field.type) {
+                                case "array":
+                                    return JSON.parse(input.value);
+                                case "number":
+                                    return input.value === "" ? Number.NaN : Number(input.value);
+                                default:
+                                    return input.value;
+                            }
+                        };
+                        row.append(fieldControl(input));
+                        break;
+                    }
+                }
+                write(value);
+                let inputVersion = 0;
+                inputContainer.addEventListener(eventName, event => {
+                    if (event.isComposing) return;
+                    const version = ++inputVersion;
+                    let value;
+                    try {
+                        value = read();
+                    } catch (error) {
+                        notify({ kind: "error", message: error.message });
+                        return;
+                    }
+                    const restore = () => {
+                        if (version === inputVersion) write(client.snapshot().values[field.key]);
+                    };
+                    perform(
+                        () => {
+                            if (!validValue(field, value)) {
+                                const error = new TypeError("Invalid setting value");
+                                notify({ kind: "error", operation: "write", key: field.key, message: error.message });
+                                throw error;
+                            }
+                            return client.set(field.key, value);
+                        },
+                        () => {
+                            for (const refresh of summaries) refresh();
+                            for (const refresh of warningRefreshers) refresh();
+                        },
+                        restore,
+                    );
+                });
+                if (eventName === "input") inputContainer.addEventListener("compositionend", event => event.target.dispatchEvent(new window.Event("input", { bubbles: true })));
+                groups.get(group).append(row);
+            }
+            const settingsPage = element("section", "pp-panel pp-detail pp-settings-page");
+            const settingsOutput = element("pre", "pp-cache");
+            settingsOutput.setAttribute("aria-label", "Settings 内容");
+            settingsPage.append(settingsOutput);
+            const loadSettings = () => {
+                editors.get("$settings").load = undefined;
+                if (saving) return;
+                let value;
+                return perform(
+                    async () => {
+                        try {
+                            value = await client.readSettings();
+                        } catch (error) {
+                            notify({ kind: "error", message: error.message });
+                            throw error;
+                        }
+                    },
+                    () => {
+                        settingsOutput.textContent = value === undefined ? "暂无设置" : JSON.stringify(value, null, 2);
+                    },
+                    () => {
+                        settingsOutput.textContent = "读取设置失败";
+                    },
+                );
+            };
+            editors.set("$settings", { node: settingsPage, title: "设置", load: loadSettings });
+            handlers.set("viewSettings", () => {
+                loadSettings();
+                page.open("$settings");
+            });
+            const cachePage = element("section", "pp-panel pp-detail pp-cache-page");
+            const output = element("pre", "pp-cache");
+            output.textContent = "正在读取缓存…";
+            output.setAttribute("aria-label", "Caches 内容");
+            cachePage.append(output);
+            const loadCaches = () => {
+                editors.get("$caches").load = undefined;
+                if (saving) return;
+                let value;
+                return perform(
+                    async () => {
+                        try {
+                            value = await client.readCaches();
+                        } catch (error) {
+                            notify({ kind: "error", message: error.message });
+                            throw error;
+                        }
+                    },
+                    () => {
+                        output.textContent = value === undefined ? "暂无缓存" : JSON.stringify(value, null, 2);
+                    },
+                    () => {
+                        output.textContent = "读取缓存失败";
+                    },
+                );
+            };
+            editors.set("$caches", { node: cachePage, title: "缓存", load: loadCaches });
+            handlers.set("viewCaches", () => {
+                loadCaches();
+                page.open("$caches");
+            });
+            handlers.set("clearCaches", async () => {
+                if (saving) return;
+                const shared = definition.cachePath && definition.cachePath !== `@${definition.storageKey}.${active}.Caches`;
+                const message = shared ? `清空共享缓存 ${definition.cachePath}？使用该缓存的其它模块也会受影响。` : `清空 ${active} 的全部 Caches？`;
+                if (!(await page.confirm(message)) || destroyed || saving) return;
+                return perform(
+                    () => client.clearCaches(),
+                    () => {
+                        output.textContent = "暂无缓存";
+                    },
+                );
+            });
+            handlers.set("reset", async () => {
+                if (saving) return;
+                const message = definition.resetPaths ? `重置 ${definition.metadata?.name ?? active} 的设置？只删除本页面的设置，保留共享存储中的其它设置和缓存。` : `重置 ${active} 的设置？这将删除该模块的 Settings、Caches 和其它持久化数据。`;
+                if (!(await page.confirm(message)) || destroyed || saving) return;
+                return perform(() => client.reset(), controls);
+            });
+            viewport.replaceChildren(view);
+            for (const grow of growingInputs) grow();
+            page.refresh();
+        }
+        queueMicrotask(() => {
+            if (!destroyed) open(definition.module);
+        });
+        return () => {
+            destroyed = true;
+            generation++;
+            client.leave();
+            shell.remove();
+        };
+    }
+
+    /**
+     * 返回当前会话中的字段或操作页，不再读取配置。
+     * Return a field or action view from the current session without fetching configuration.
+     * @param {string} key 子页键 / Detail key.
+     * @returns {HTMLElement} 当前视图 / Current view.
+     */
+    view(key) {
+        return this.#view(key);
+    }
+
+    /**
+     * 提供当前页标题及菜单状态。
+     * Provide the current title and action state.
+     * @param {string} key 子页键 / Detail key.
+     * @returns {object} 页面状态 / Page state.
+     */
+    state(key) {
+        return this.#state(key);
+    }
+
+    /**
+     * 执行共用菜单中的操作。
+     * Perform an action from the shared menu.
+     * @param {string} id 操作标识 / Action identifier.
+     * @returns {void} 无返回值 / No return value.
+     */
+    perform(id) {
+        this.#perform(id);
+    }
+
+    /**
+     * 释放读取与视图；已开始的写入仍沿原队列完成。
+     * Release reads and views while allowing started writes to finish through the existing queue.
+     * @returns {void} 无返回值 / No return value.
+     */
+    destroy() {
+        this.#release();
+    }
+}
+
+/**
+ * 浏览器宿主提供网页导航、通知、主题和可视区域避让。
+ * The browser host provides web navigation, notices, theme and viewport clearance.
+ * @param {import("./home.mjs").BridgeOptions} options 菜单和返回动作 / Menu and back action.
+ * @returns {import("./home.mjs").Bridge} 浏览器宿主 / Browser host.
+ */
+function browserHost({ menu, back }) {
+    const root = document.documentElement;
+    const header = document.createElement("header");
+    header.className = "pp-host-header";
+    const button = document.createElement("button");
+    button.className = "pp-host-back";
+    button.type = "button";
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>';
+    button.setAttribute("aria-label", "返回");
+    button.onclick = back;
+    const left = document.createElement("span");
+    left.className = "pp-host-left";
+    left.append(button);
+    const title = document.createElement("span");
+    title.className = "pp-host-title";
+    const brand = document.createElement("div");
+    brand.className = "pp-host-brand";
+    const brandLink = document.createElement("a");
+    brandLink.className = "pp-host-brand-link";
+    const logo = document.createElement("span");
+    logo.className = "pp-host-logo";
+    const image = document.createElement("img");
+    image.alt = "logo";
+    logo.append(image);
+    brandLink.append(logo, title);
+    brand.append(brandLink);
+    header.append(left, brand, menu.element);
+    document.body.prepend(header);
+    const toast = document.createElement("div");
+    toast.className = "pp-host-toast";
+    toast.setAttribute("role", "status");
+    toast.hidden = true;
+    document.body.append(toast);
+    let timer;
+    const theme = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyTheme = () => {
+        root.dataset.theme = theme.matches ? "dark" : "light";
+    };
+    const viewport = window.visualViewport;
+    const resize = () => {
+        root.style.setProperty("--pp-host-height", `${header.getBoundingClientRect().height}px`);
+        const clearance = viewport && viewport.scale === 1 ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
+        root.style.setProperty("--pp-keyboard-height", `${clearance}px`);
+    };
+    const scroll = () => {
+        const pages = document.querySelector("[data-preference-panes-pages]");
+        const current = [...pages.children].find(view => !view.inert);
+        header.classList.toggle("pp-scrolled", (current?.scrollTop ?? 0) >= 100);
+    };
+    document.addEventListener("scroll", scroll, true);
+    theme.addEventListener("change", applyTheme);
+    window.addEventListener("resize", resize);
+    window.addEventListener("pageshow", resize);
+    viewport?.addEventListener("resize", resize);
+    viewport?.addEventListener("scroll", resize);
+    applyTheme();
+    resize();
+    return {
+        update(state) {
+            title.textContent = state.logoText ?? state.title;
+            brandLink.href = state.logoHref ?? "/";
+            logo.hidden = !state.logo;
+            if (state.logo) image.src = state.logo;
+            menu.element.hidden = !state.actions.length;
+            button.disabled = state.busy || !state.canGoBack;
+            scroll();
+        },
+        confirm: message => window.confirm(message),
+        notice(detail) {
+            clearTimeout(timer);
+            toast.textContent = detail.message;
+            toast.hidden = false;
+            timer = setTimeout(() => {
+                toast.hidden = true;
+            }, 2400);
+        },
+        openURL(url, target) {
+            switch (target) {
+                case "_blank":
+                    window.open(url, "_blank", "noopener,noreferrer");
+                    break;
+                default:
+                    window.location.assign(url);
+                    break;
+            }
+        },
+        destroy() {
+            clearTimeout(timer);
+            document.removeEventListener("scroll", scroll, true);
+            theme.removeEventListener("change", applyTheme);
+            window.removeEventListener("resize", resize);
+            window.removeEventListener("pageshow", resize);
+            viewport?.removeEventListener("resize", resize);
+            viewport?.removeEventListener("scroll", resize);
+            root.style.removeProperty("--pp-host-height");
+            root.style.removeProperty("--pp-keyboard-height");
+            delete root.dataset.theme;
+            header.remove();
+            toast.remove();
+        },
+    };
+}
+
+/**
+ * 一个文档共享宿主、路由和当前模块会话，字段子页不重新读取配置。
+ * Share one host, router and module session within a document without reloading config for field views.
+ */
+class PageController {
+    #navigation;
+    #host;
+    #menu;
+    #title;
+    #logo;
+    #logoText;
+    #logoHref;
+    #modules;
+    #links;
+    #session;
+    #destroyed = false;
+
+    /**
+     * 接管已初始化的宿主与首页；此接口仅供包内入口组合。
+     * Own an initialized host and homepage; this interface is only used by internal entry points.
+     * @param {HTMLElement} container 页面容器 / Page container.
+     * @param {HTMLElement} home 首页节点 / Homepage node.
+     * @param {object} options 宿主、菜单、品牌及入口 / Host, menu, brand and entries.
+     */
+    constructor(container, home, { host, menu, title, logo, logoText, logoHref, modules, links = [] }) {
+        this.#host = host;
+        this.#menu = menu;
+        this.#title = title;
+        this.#logo = logo;
+        this.#logoText = logoText || (logo ? "" : title);
+        this.#logoHref = logoHref;
+        this.#modules = modules;
+        this.#links = links;
+        this.#navigation = new Navigation(container, home, (key, signal) => this.#view(key, signal));
+        this.#navigation.addEventListener("change", () => this.update());
+        this.update();
+    }
+
+    /**
+     * 创建模块会话或复用其字段页；外部网站才使用 iframe。
+     * Create a module session or reuse a field view; only external sites use an iframe.
+     * @param {string} key 路由键 / Route key.
+     * @param {AbortSignal} signal 当前外链视图的取消信号 / Cancellation signal for the current external view.
+     * @returns {HTMLElement | undefined} 视图；未知模块返回 undefined / View; undefined for unknown modules.
+     */
+    #view(key, signal) {
+        const [module, ...parts] = key.split("/");
+        const view = parts.join("/");
+        if (module !== this.#session?.module) {
+            this.#session?.controller.abort();
+            this.#session?.panel?.destroy();
+            this.#session = undefined;
+        }
+        if (module === "$link") {
+            const link = this.#links[Number(view)];
+            if (!link || link.dataset.target !== "internal") return;
+            const page = element("section", "pp-link-page");
+            const iframe = element("iframe", "");
+            iframe.title = link.querySelector(".pp-home-name").textContent;
+            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox");
+            iframe.src = link.href;
+            page.append(iframe);
+            signal.addEventListener("abort", () => iframe.remove(), { once: true });
+            return page;
+        }
+        const entry = this.#modules.get(module);
+        if (!entry) return;
+        if (!this.#session) {
+            const controller = new AbortController();
+            const root = element("section", "pp-module-page");
+            const session = { module, root, controller };
+            this.#session = session;
+            const load = async () => {
+                if (controller.signal.aborted) return;
+                root.replaceChildren(statusView("正在打开设置…"));
+                try {
+                    let boxjs = entry.boxjs;
+                    if (!boxjs) {
+                        const response = await fetch(`/api/${encodeURIComponent(module)}`, { cache: "no-store", signal: controller.signal });
+                        if (!response.ok) throw new Error(`配置加载失败：HTTP ${response.status}`);
+                        boxjs = await response.json();
+                    }
+                    if (controller.signal.aborted) return;
+                    root.replaceChildren();
+                    session.panel = new PreferencesPanel(root, normalizeBoxJs(boxjs), this);
+                    this.update();
+                } catch (error) {
+                    if (controller.signal.aborted) return;
+                    root.replaceChildren(statusView(`加载失败：${error.message}`, load));
+                }
+            };
+            // 已提供 BoxJS 时也等待路由切换完成，再发布表单状态。
+            // Wait for routing to finish before publishing form state, even with supplied BoxJS.
+            queueMicrotask(load);
+        }
+        return this.#session.panel?.view(view) ?? this.#session.root;
+    }
+
+    /**
+     * 同步唯一标题栏与菜单；离开模块时终止读取和会话。
+     * Synchronize the only title bar and menu, ending reads and sessions on departure.
+     * @returns {void} 无返回值 / No return value.
+     */
+    update() {
+        if (this.#destroyed || !this.#navigation) return;
+        const [module, ...parts] = this.#navigation.current.split("/");
+        if (!module && this.#session) {
+            this.#session.controller.abort();
+            this.#session.panel?.destroy();
+            this.#session = undefined;
+        }
+        const state = this.#session?.panel?.state(parts.join("/")) ?? {
+            title: module === "$link" ? this.#links[Number(parts[0])].querySelector(".pp-home-name").textContent : (this.#modules.get(module)?.name ?? this.#title),
+            actions: [],
+            busy: false,
+        };
+        document.title = state.title;
+        this.#menu.update(state.actions, state.busy);
+        Promise.resolve(this.#host.update({ ...state, logo: module ? undefined : this.#logo, logoText: module ? undefined : this.#logoText, logoHref: this.#logoHref, canGoBack: this.#navigation.canGoBack })).catch(error => this.notice({ kind: "error", message: error.message }));
+    }
+
+    /**
+     * 控件重建后重新解析当前路由，不增加历史或重新加载模块配置。
+     * Resolve the current route after rebuilding controls without adding history or reloading config.
+     * @returns {void} 无返回值 / No return value.
+     */
+    refresh() {
+        if (!this.#destroyed) this.#navigation.refresh();
+    }
+
+    /**
+     * 打开当前模块的字段或操作子页。
+     * Open a field or action subview of the current module.
+     * @param {string} view 子页键 / Detail key.
+     * @returns {void} 无返回值 / No return value.
+     */
+    open(view) {
+        this.#navigation.open(`${this.#session.module}/${view}`);
+    }
+
+    /**
+     * 执行当前表单操作。
+     * Perform an action on the current form.
+     * @param {string} id 操作标识 / Action identifier.
+     * @returns {void} 无返回值 / No return value.
+     */
+    perform(id) {
+        this.#session?.panel?.perform(id);
+    }
+
+    /**
+     * 请求宿主确认；退出后忽略晚到的选择。
+     * Request host confirmation and ignore a late choice after departure.
+     * @param {string} message 确认文字 / Confirmation message.
+     * @returns {Promise<boolean>} 用户选择 / User choice.
+     */
+    async confirm(message) {
+        const session = this.#session;
+        const confirmed = await this.#host.confirm(message);
+        return !this.#destroyed && session === this.#session && confirmed;
+    }
+
+    /**
+     * 由唯一宿主显示通知。
+     * Display a notice through the only host.
+     * @param {import("./Navigation.mjs").Notice} detail 已格式化通知 / Formatted notice.
+     * @returns {void} 无返回值 / No return value.
+     */
+    notice(detail) {
+        if (!this.#destroyed) this.#host.notice(detail);
+    }
+
+    /**
+     * 由宿主执行标准外链导航。
+     * Delegate standard external navigation to the host.
+     * @param {string} url 完整地址 / Absolute URL.
+     * @param {"_self" | "_blank"} [target] 打开方式 / Opening mode.
+     * @returns {void} 无返回值 / No return value.
+     */
+    openURL(url, target) {
+        try {
+            Promise.resolve(this.#host.openURL(url, target)).catch(error => this.notice({ kind: "error", message: error.message }));
+        } catch (error) {
+            this.notice({ kind: "error", message: error.message });
+        }
+    }
+
+    /**
+     * 共用首页与表单导航。
+     * Navigation shared by the homepage and forms.
+     */
+    get navigation() {
+        return this.#navigation;
+    }
+
+    /**
+     * 结束页面能力和会话；表单写入队列自行收尾。
+     * End page capabilities and sessions while forms finish their write queues.
+     * @returns {void} 无返回值 / No return value.
+     */
+    destroy() {
+        if (this.#destroyed) return;
+        this.#destroyed = true;
+        this.#session?.controller.abort();
+        this.#session?.panel?.destroy();
+        this.#navigation.destroy();
+        this.#host.destroy();
+        this.#menu.destroy();
+    }
+}
+
+var defaults = "/* 通用默认样式只使用 pp 命名空间；项目可通过 CSS 输入覆盖变量和组件。\n * Generic defaults use only the pp namespace; projects may override variables and components through CSS input. */\n:root {\n    --pp-text: #18191c;\n    --pp-background: #f6f7f8;\n    --pp-surface: #fff;\n    --pp-field: #f1f2f3;\n    --pp-border: #e3e5e7;\n    --pp-muted: #797f87;\n    --pp-accent: #1677ff;\n    --pp-warning: #9a6700;\n    --pp-host-height: 0px;\n    --pp-keyboard-height: 0px;\n}\n.pp-panel {\n    font:\n        15px / 1.5 -apple-system,\n        BlinkMacSystemFont,\n        \"Segoe UI\",\n        sans-serif;\n    color: var(--pp-text);\n    background: var(--pp-background);\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    width: 100%;\n    max-width: 100vw;\n    min-width: 0;\n}\n\n:root[data-theme=\"dark\"] {\n    --pp-text: #f1f2f3;\n    --pp-background: #0d0e0f;\n    --pp-surface: #18191c;\n    --pp-field: #2f3238;\n    --pp-border: #2f3238;\n    --pp-muted: #9499a0;\n    --pp-warning: #f0b849;\n}\n.pp-panel * {\n    box-sizing: border-box;\n    letter-spacing: 0;\n}\n.pp-panel button {\n    font: inherit;\n    cursor: pointer;\n    border: 0;\n    background: none;\n    color: inherit;\n}\n.pp-panel button:disabled {\n    opacity: 0.5;\n    cursor: wait;\n}\n.pp-viewport {\n    min-width: 0;\n}\n.pp-fields,\n.pp-choice-page,\n.pp-settings-page,\n.pp-cache-page {\n    box-sizing: border-box;\n    min-width: 0;\n    padding: calc(12px + var(--pp-host-height)) max(16px, calc((100% - 688px) / 2)) calc(28px + env(safe-area-inset-bottom) + var(--pp-keyboard-height));\n    scroll-padding-bottom: var(--pp-keyboard-height);\n    background: var(--pp-background);\n}\n.pp-choice-link {\n    display: flex;\n    align-items: center;\n    justify-content: flex-end;\n    gap: 8px;\n    max-width: 45%;\n    min-width: 44px;\n    min-height: 44px;\n    padding: 0;\n    text-align: right;\n    flex: 1;\n}\n.pp-panel a.pp-choice-link {\n    color: var(--pp-accent);\n    text-decoration: none;\n}\n.pp-summary {\n    color: var(--pp-muted);\n    font-size: 13px;\n    line-height: 18px;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n    overflow-wrap: anywhere;\n}\n.pp-chevron {\n    color: var(--pp-muted);\n    font-size: 22px;\n    flex: none;\n}\n.pp-editor {\n    flex: none;\n    width: 45%;\n    min-width: 0;\n    min-height: 36px;\n    padding: 8px 10px;\n    font: inherit;\n    font-size: 16px;\n    color: var(--pp-text);\n    background: var(--pp-field);\n    border: 0;\n    border-radius: 6px;\n}\n.pp-panel .pp-multiline {\n    display: block;\n}\n.pp-multiline .pp-editor {\n    width: 100%;\n    margin-top: 10px;\n}\n.pp-panel [hidden] {\n    display: none !important;\n}\n.pp-label {\n    flex: 1;\n    min-width: 0;\n    display: flex;\n    flex-direction: column;\n    align-items: flex-start;\n    margin-right: 16px;\n}\n.pp-field-name {\n    color: var(--pp-text);\n    font-size: 15px;\n}\n.pp-field-description {\n    margin-top: 2px;\n    color: var(--pp-muted);\n    font-size: 12px;\n}\n.pp-field-warning {\n    margin-top: 4px;\n    color: var(--pp-warning);\n    font-size: 12px;\n    overflow-wrap: anywhere;\n}\n.pp-group {\n    margin-top: 16px;\n}\n.pp-group-title {\n    margin: 0 0 8px;\n    color: var(--pp-muted);\n    font-size: 15px;\n    font-weight: 400;\n}\n.pp-row {\n    min-width: 0;\n    min-height: 48px;\n    padding: 16px;\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: var(--pp-surface);\n    border-bottom: 1px solid var(--pp-border);\n}\n.pp-rows > :last-child {\n    border-bottom: 0 !important;\n}\n.pp-switch {\n    flex: none;\n    accent-color: var(--pp-accent);\n}\n.pp-choice {\n    justify-content: space-between;\n    cursor: pointer;\n}\n.pp-choice input {\n    width: 20px;\n    height: 20px;\n    flex: none;\n    accent-color: var(--pp-accent);\n    margin: 0;\n}\n.pp-description {\n    font-size: 12px;\n    line-height: 1.6;\n    color: var(--pp-muted);\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n.pp-status {\n    position: absolute;\n    inset: 0;\n    display: grid;\n    place-content: center;\n    justify-items: center;\n    gap: 12px;\n    min-width: 0;\n    min-height: 0;\n    margin: 0;\n    padding: 24px;\n    color: var(--pp-muted, GrayText);\n    text-align: center;\n    background: var(--pp-background, Canvas);\n}\n.pp-viewport > .pp-status {\n    position: absolute;\n}\n.pp-status-spinner {\n    box-sizing: border-box;\n    width: 28px;\n    height: 28px;\n    border: 3px solid var(--pp-border, #8884);\n    border-top-color: var(--pp-accent, AccentColor);\n    border-radius: 50%;\n    animation: pp-status-spin 0.8s linear infinite;\n}\n.pp-status-message {\n    max-width: 100%;\n    margin: 0;\n    overflow-wrap: anywhere;\n}\n.pp-status-action {\n    min-width: 96px;\n    min-height: 44px;\n    padding: 8px 16px;\n    border: 0;\n    border-radius: 6px;\n    color: var(--pp-text, ButtonText);\n    font: inherit;\n    cursor: pointer;\n    background: var(--pp-surface, ButtonFace);\n}\n@keyframes pp-status-spin {\n    to {\n        transform: rotate(1turn);\n    }\n}\n.pp-cache {\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n.pp-panel :focus-visible {\n    outline: 2px solid var(--pp-accent);\n    outline-offset: -2px;\n}\n\n/* 首页沿用表单的分组与说明样式，入口按屏幕宽度自动换行。\n * The landing page reuses form groups and descriptions, with entries wrapping by viewport width. */\n:root.pp-page {\n    color-scheme: light dark;\n    font-size: 16px;\n}\n.pp-page body {\n    margin: 0;\n    overflow: hidden;\n    font:\n        16px / 1.5 -apple-system,\n        BlinkMacSystemFont,\n        \"Segoe UI\",\n        sans-serif;\n    background: var(--pp-background, Canvas);\n    color: var(--pp-text, CanvasText);\n}\n[data-preference-panes-pages] {\n    position: relative;\n    height: 100vh;\n    background: inherit;\n    overflow: hidden;\n}\n@supports (height: 100dvh) {\n    [data-preference-panes-pages] {\n        height: 100dvh;\n    }\n}\n.pp-home,\n.pp-module-page,\n.pp-detail,\n.pp-link-page {\n    position: absolute;\n    inset: 0;\n    overflow-x: hidden;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    background: var(--pp-background);\n}\n.pp-module-page,\n.pp-detail,\n.pp-link-page {\n    z-index: 1;\n    box-shadow: -8px 0 24px #00000014;\n}\n.pp-link-page {\n    top: var(--pp-host-height);\n}\n.pp-link-page iframe {\n    display: block;\n    border: 0;\n    width: 100%;\n    height: 100%;\n    background: inherit;\n}\n/* 网页导航复用宿主官网已有字体；官网更换字体产物时须同步资源地址。\n * The web navigation reuses the host site's existing font; update the URL when its font artifact changes. */\n@font-face {\n    font-family: \"SF Pro Display\";\n    font-style: normal;\n    font-weight: 700;\n    src:\n        local(\"SF Pro Display\"),\n        url(\"/static/font/SFPRODISPLAYBOLD.21a7ca4497.woff2\") format(\"woff2\");\n}\n.pp-host-header {\n    box-sizing: border-box;\n    position: fixed;\n    inset: 0 0 auto;\n    z-index: 2;\n    display: flex;\n    align-items: center;\n    height: calc(64px + env(safe-area-inset-top));\n    padding: env(safe-area-inset-top) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));\n    border-bottom: 1px solid transparent;\n    background: transparent;\n    -webkit-backdrop-filter: blur(25px);\n    backdrop-filter: blur(25px);\n    color: var(--pp-text);\n    font-family: \"SF Pro Display\", \"Inter var experimental\", \"Inter var\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif;\n    line-height: 1.7;\n    font-synthesis: style;\n    text-rendering: optimizelegibility;\n    -webkit-font-smoothing: antialiased;\n    -moz-osx-font-smoothing: grayscale;\n    -webkit-text-size-adjust: 100%;\n    transition:\n        background-color 200ms ease-in-out,\n        border-color 200ms ease-in-out;\n}\n.pp-host-header.pp-scrolled {\n    background: rgba(255, 255, 255, 0.6);\n    border-color: var(--pp-border);\n}\n:root[data-theme=\"dark\"] .pp-host-header.pp-scrolled {\n    background: rgba(13, 14, 15, 0.6);\n}\n@media (min-width: 1280px) {\n    .pp-host-header {\n        padding-right: max(20px, calc((100vw - 1588px) / 2));\n        padding-left: max(20px, calc((100vw - 1588px) / 2));\n    }\n}\n@media (prefers-reduced-motion: reduce) {\n    .pp-host-header {\n        transition: none;\n    }\n}\n.pp-host-brand {\n    display: flex;\n    align-items: center;\n    flex: 1;\n    min-width: 0;\n    margin-right: 8px;\n}\n.pp-host-brand-link {\n    display: flex;\n    align-items: center;\n    height: 100%;\n    min-width: 0;\n    max-width: 100%;\n    color: inherit;\n    text-decoration: none;\n    font-size: 1rem;\n    font-weight: 600;\n    transition: opacity 0.3s;\n}\n.pp-host-brand-link:hover {\n    opacity: 0.6;\n}\n.pp-host-logo {\n    flex: none;\n    min-width: 2rem;\n    margin-right: 0.25rem;\n}\n.pp-host-logo img {\n    display: block;\n    height: 1.6rem;\n}\n.pp-host-title {\n    min-width: 0;\n    text-align: left;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pp-host-left {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    flex: none;\n}\n.pp-host-left::after {\n    content: \"\";\n    display: inline-block;\n    width: 1px;\n    height: 24px;\n    margin: 0 16px;\n    background-color: #0000001f;\n}\n:root[data-theme=\"dark\"] .pp-host-left::after {\n    background-color: #5454547a;\n}\n.pp-host-back {\n    border: 0;\n    border-radius: 18px;\n    background: none;\n    color: inherit;\n    width: 36px;\n    height: 36px;\n    padding: 8px;\n    cursor: pointer;\n    transition: background-color 0.2s ease-in-out;\n}\n.pp-host-back:disabled {\n    cursor: default;\n}\n.pp-host-back svg {\n    display: block;\n    width: 20px;\n    height: 20px;\n    fill: none;\n    stroke: currentColor;\n    stroke-width: 2;\n}\n.pp-host-back:hover {\n    background: #f1f1f1;\n}\n:root[data-theme=\"dark\"] .pp-host-back:hover {\n    background: #343a46;\n}\n.pp-host-toast {\n    position: fixed;\n    z-index: 3;\n    bottom: calc(24px + env(safe-area-inset-bottom) + var(--pp-keyboard-height));\n    left: 50%;\n    transform: translateX(-50%);\n    max-width: calc(100% - 48px);\n    padding: 10px 18px;\n    border-radius: 12px;\n    background: #222e;\n    color: #fff;\n    font-size: 14px;\n    text-align: center;\n}\n.pp-host-toast[hidden] {\n    display: none;\n}\n.pp-host-error {\n    margin: 24px;\n    padding: 16px;\n    border: 1px solid var(--pp-danger, #e45656);\n    border-radius: 12px;\n    font-size: 16px;\n    overflow-wrap: anywhere;\n}\n\n.pp-home {\n    max-width: 1000px;\n    margin: auto;\n    padding: var(--pp-host-height) max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));\n}\n.pp-home-entries {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: space-around;\n    row-gap: 16px;\n    padding: 16px 0;\n    background: var(--pp-surface);\n}\n.pp-home-item {\n    box-sizing: border-box;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    width: 25%;\n    min-width: 0;\n    padding: 0 4px;\n    border: 0;\n    background: none;\n    color: var(--pp-text);\n    font:\n        12px / 1.5 -apple-system,\n        sans-serif;\n    cursor: pointer;\n    text-decoration: none;\n}\n@media (min-width: 500px) {\n    .pp-home-item {\n        width: calc(100% / 6);\n    }\n}\n@media (min-width: 700px) {\n    .pp-home-item {\n        width: 12.5%;\n    }\n}\n.pp-home-icon {\n    box-sizing: border-box;\n    width: 56px;\n    height: 56px;\n    padding: 8px;\n    border-radius: 50%;\n    background: var(--pp-field);\n    font-size: 32px;\n    line-height: 40px;\n    text-align: center;\n}\n.pp-home-icon img {\n    display: block;\n    width: 100%;\n    height: 100%;\n    object-fit: contain;\n}\n.pp-home-name {\n    margin-top: 8px;\n}\n.pp-home-content {\n    min-width: 0;\n    width: 100%;\n}\n.pp-home-content > span {\n    display: block;\n}\n.pp-home-name,\n.pp-home-item [data-module-status] {\n    width: 100%;\n    overflow: hidden;\n    text-align: center;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pp-home-item [data-module-status] {\n    min-height: 20px;\n}\n.pp-home-item:disabled {\n    opacity: 0.45;\n    cursor: default;\n}\n.pp-home-entries[data-layout=\"list\"] {\n    display: block;\n    padding: 0;\n}\n.pp-home-entries[data-layout=\"list\"] .pp-home-item {\n    flex-direction: row;\n    gap: 12px;\n    width: 100%;\n    padding: 12px 16px;\n    font-size: 15px;\n}\n.pp-home-entries[data-layout=\"list\"] .pp-home-item + .pp-home-item {\n    border-top: 1px solid var(--pp-border);\n}\n.pp-home-entries[data-layout=\"list\"] .pp-home-icon {\n    flex: none;\n    width: 40px;\n    height: 40px;\n    padding: 4px;\n    font-size: 24px;\n    line-height: 32px;\n}\n.pp-home-entries[data-layout=\"list\"] .pp-home-name {\n    margin-top: 0;\n    text-align: left;\n}\n.pp-home-arrow {\n    color: var(--pp-muted);\n    font-size: 24px;\n}\n.pp-home-footer {\n    margin-top: 16px;\n    text-align: center;\n    white-space: normal;\n}\n.pp-home-footer p {\n    margin: 8px 0 0;\n}\n";
+
+const selector = "style[data-preference-panes-defaults]";
+const stylesheetSelector = "link[data-preference-panes-stylesheet]";
+
+/**
+ * 在文档中安装一次默认样式，并标记当前调用方是否拥有该节点。
+ * Install default styles once and report whether the current caller owns the node.
+ * @param {Document} document 目标文档 / Target document.
+ * @returns {{element: HTMLStyleElement, owned: boolean}} 样式节点及所有权 / Style node and ownership.
+ */
+function installDefaultStyles(document) {
+    const existing = document.head.querySelector(selector);
+    if (existing) return { element: existing, owned: false };
+    const element = document.createElement("style");
+    element.dataset.preferencePanesDefaults = "";
+    element.textContent = defaults;
+    document.head.insertBefore(element, document.head.querySelector(stylesheetSelector));
+    return { element, owned: true };
+}
+
+/**
+ * 校验外部 JSON 中的章节、入口和导航目标，避免生成不可访问的设置入口。
+ * Validate sections, entries and navigation targets in external JSON before rendering inaccessible entries.
+ * @param {unknown} config 外部首页配置 / External homepage configuration.
+ * @returns {void} 非法输入抛出错误 / Invalid input throws.
+ */
+function validateHome(config) {
+    if (!config || typeof config.title !== "string" || !Array.isArray(config.sections)) throw new Error("首页 JSON 缺少 title 或 sections");
+    if (config.logo !== undefined && typeof config.logo !== "string") throw new Error("首页 logo 必须是图片地址");
+    if (config.logoText !== undefined && typeof config.logoText !== "string") throw new Error("首页 logoText 必须是文字");
+    if (config.logoHref !== undefined) {
+        if (typeof config.logoHref !== "string") throw new Error("首页 logoHref 必须是链接地址");
+        if (["javascript:", "data:", "vbscript:"].includes(new URL(config.logoHref, "https://preference-panes.invalid/").protocol)) throw new Error("首页 logoHref 的链接无效");
+    }
+    if (config.footer !== undefined && (!Array.isArray(config.footer) || config.footer.some(text => typeof text !== "string"))) throw new Error("首页 footer 必须是文字数组");
+    const modules = new Set();
+    for (const section of config.sections) {
+        if (!section || typeof section.title !== "string" || !Array.isArray(section.items) || (section.layout !== undefined && !["grid", "list"].includes(section.layout))) throw new Error("首页章节需要 title、items 和有效的 layout");
+        for (const item of section.items) {
+            if (!item || typeof item.name !== "string" || !item.icon || (typeof item.icon.src === "string") === (typeof item.icon.text === "string") || (item.icon.src !== undefined && typeof item.icon.src !== "string") || (item.icon.text !== undefined && typeof item.icon.text !== "string"))
+                throw new Error("首页入口需要 name 和唯一的图片或文字 icon");
+            if (item.description !== undefined && typeof item.description !== "string") throw new Error(`入口 ${item.name} 的 description 必须是文字`);
+            if (item.target !== undefined && (item.module !== undefined || !["internal", "_self", "_blank"].includes(item.target))) throw new Error(`入口 ${item.name} 的 target 只允许链接使用 internal、_self 或 _blank`);
+            if ((typeof item.module === "string") === (typeof item.href === "string") || (item.module !== undefined && typeof item.module !== "string") || (item.href !== undefined && typeof item.href !== "string")) throw new Error(`入口 ${item.name} 必须选择 module 或 href`);
+            if (item.module !== undefined) {
+                if (!/^[A-Za-z0-9_-]+$/.test(item.module) || modules.has(item.module)) throw new Error(`入口 ${item.name} 的模块名称无效或重复`);
+                modules.add(item.module);
+            } else {
+                const protocol = new URL(item.href, "https://preference-panes.invalid/").protocol;
+                if (["javascript:", "data:", "vbscript:"].includes(protocol) || (item.target === "internal" && !["http:", "https:"].includes(protocol))) throw new Error(`入口 ${item.name} 的链接无效`);
+            }
+        }
+    }
+}
+
+/**
+ * 共用网格和列表章节；资源地址相对于 JSON，所有项目文字通过 textContent 绘制。
+ * Share grid and list sections, resolve resources against JSON and render project text through textContent.
+ * @param {import("./home.mjs").HomeConfig} config 已校验的首页配置 / Validated homepage configuration.
+ * @param {URL} url JSON 地址 / JSON URL.
+ * @param {HTMLElement} home 首页容器 / Homepage container.
+ * @returns {void} 无返回值 / No return value.
+ */
+function renderHome(config, url, home) {
+    const document = home.ownerDocument;
+    home.replaceChildren();
+    for (const section of config.sections) {
+        const group = document.createElement("section");
+        group.className = "pp-group";
+        const title = document.createElement("h2");
+        title.className = "pp-group-title";
+        title.textContent = section.title;
+        const entries = document.createElement("div");
+        entries.className = "pp-home-entries";
+        entries.dataset.layout = section.layout ?? "grid";
+        for (const item of section.items) {
+            const entry = document.createElement(item.module ? "button" : "a");
+            entry.className = "pp-home-item";
+            if (item.module) {
+                entry.type = "button";
+                entry.disabled = true;
+                entry.dataset.module = item.module;
+            } else {
+                entry.href = new URL(item.href, url).href;
+                if (item.target !== undefined) {
+                    entry.dataset.target = item.target;
+                    switch (item.target) {
+                        case "_blank":
+                            entry.target = item.target;
+                            entry.rel = "noopener noreferrer";
+                            break;
+                        case "_self":
+                            entry.target = item.target;
+                            break;
+                    }
+                }
+            }
+            const icon = document.createElement("span");
+            icon.className = "pp-home-icon";
+            icon.setAttribute("aria-hidden", "true");
+            if (item.icon.src !== undefined) {
+                const image = document.createElement("img");
+                image.src = new URL(item.icon.src, url).href;
+                image.alt = "";
+                icon.append(image);
+            } else icon.textContent = item.icon.text;
+            const content = document.createElement("span");
+            content.className = "pp-home-content";
+            const name = document.createElement("span");
+            name.className = "pp-home-name";
+            name.textContent = item.name;
+            content.append(name);
+            if (item.description !== undefined) {
+                const description = document.createElement("span");
+                description.className = "pp-description";
+                description.textContent = item.description;
+                content.append(description);
+            }
+            if (item.module) {
+                const status = document.createElement("span");
+                status.className = "pp-description";
+                status.dataset.moduleStatus = "";
+                status.textContent = "检测中";
+                content.append(status);
+            }
+            entry.append(icon, content);
+            if (entries.dataset.layout === "list") {
+                const arrow = document.createElement("span");
+                arrow.className = "pp-home-arrow";
+                arrow.textContent = "›";
+                arrow.setAttribute("aria-hidden", "true");
+                entry.append(arrow);
+            }
+            entries.append(entry);
+        }
+        group.append(title, entries);
+        home.append(group);
+    }
+    const footer = document.createElement("footer");
+    footer.className = "pp-home-footer pp-description";
+    for (const text of config.footer ?? []) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = text;
+        footer.append(paragraph);
+    }
+    home.append(footer);
+}
+
+/**
+ * 读取固定相对路径的首页 JSON 与可选 CSS、Bridge，初始化后共用模块探测与导航。
+ * Load homepage JSON and optional CSS and Bridge at fixed relative paths, then share module probes and navigation.
+ * @returns {Promise<() => void>} 退出清理动作；加载失败会显示错误并拒绝 / Cleanup action; load failures display an error and reject.
+ */
+async function startHome() {
+    let host;
+    let menu;
+    let navigation;
+    let page;
+    let statuses = [];
+    let destroyed = false;
+    let defaults;
+    let stylesheet;
+    const controller = new AbortController();
+    const destroy = () => {
+        if (destroyed) return;
+        destroyed = true;
+        controller.abort();
+        for (const { status } of statuses) status.destroy();
+        if (page) page.destroy();
+        else {
+            host?.destroy();
+            menu?.destroy();
+        }
+        stylesheet?.remove();
+        if (defaults?.owned) defaults.element.remove();
+        window.removeEventListener("pagehide", pagehide);
+    };
+    const pagehide = event => {
+        if (!event.persisted) destroy();
+    };
+    window.addEventListener("pagehide", pagehide);
+    try {
+        defaults = installDefaultStyles(document);
+        const jsonURL = new URL("./home.json", document.baseURI);
+        const response = await fetch(jsonURL, { signal: controller.signal });
+        if (!response.ok) throw new Error(`首页 JSON 加载失败：HTTP ${response.status}`);
+        const config = await response.json();
+        validateHome(config);
+        if (destroyed) return destroy;
+        const cssURL = new URL("./theme.css", document.baseURI);
+        const cssResponse = await fetch(cssURL, { method: "HEAD", cache: "no-store", signal: controller.signal });
+        if (destroyed) return destroy;
+        switch (cssResponse.status) {
+            case 200:
+                stylesheet = document.createElement("link");
+                stylesheet.rel = "stylesheet";
+                stylesheet.dataset.preferencePanesStylesheet = "";
+                stylesheet.href = cssURL.href;
+                await new Promise((resolve, reject) => {
+                    const abort = () => reject(new DOMException("页面已退出", "AbortError"));
+                    controller.signal.addEventListener("abort", abort, { once: true });
+                    stylesheet.onload = () => {
+                        controller.signal.removeEventListener("abort", abort);
+                        resolve();
+                    };
+                    stylesheet.onerror = () => {
+                        controller.signal.removeEventListener("abort", abort);
+                        reject(new Error("项目 CSS 加载失败"));
+                    };
+                    document.head.append(stylesheet);
+                });
+                break;
+            case 404:
+                break;
+            default:
+                throw new Error(`项目 CSS 探测失败：HTTP ${cssResponse.status}`);
+        }
+        if (destroyed) return destroy;
+        const bridgeURL = new URL("./bridge.mjs", document.baseURI);
+        const bridgeResponse = await fetch(bridgeURL, { method: "HEAD", cache: "no-store", signal: controller.signal });
+        if (destroyed) return destroy;
+        let factory;
+        switch (bridgeResponse.status) {
+            case 200:
+                factory = (await import(bridgeURL.href)).default;
+                break;
+            case 404:
+                factory = browserHost;
+                break;
+            default:
+                throw new Error(`Bridge 探测失败：HTTP ${bridgeResponse.status}`);
+        }
+        if (destroyed) return destroy;
+        document.title = config.title;
+        menu = new ActionMenu(id => page.perform(id));
+        host = await factory({ menu, back: () => navigation.back() });
+        if (destroyed) {
+            host.destroy();
+            menu.destroy();
+            return destroy;
+        }
+        const container = document.querySelector("[data-preference-panes-pages]");
+        const home = document.querySelector("[data-preference-panes-home]");
+        renderHome(config, jsonURL, home);
+        const buttons = [...home.querySelectorAll("[data-module]")];
+        const links = [...home.querySelectorAll("a[href]")];
+        page = new PageController(container, home, {
+            host,
+            menu,
+            title: config.title,
+            logo: config.logo ? new URL(config.logo, jsonURL).href : undefined,
+            logoText: config.logoText,
+            logoHref: new URL(config.logoHref || "/", jsonURL).href,
+            modules: new Map(config.sections.flatMap(section => section.items.filter(item => item.module).map(item => [item.module, item]))),
+            links,
+        });
+        navigation = page.navigation;
+        for (const [index, link] of links.entries()) {
+            link.addEventListener(
+                "click",
+                event => {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    switch (link.dataset.target) {
+                        case "internal":
+                            navigation.open(`$link/${index}`);
+                            break;
+                        default:
+                            page.openURL(link.href, link.dataset.target);
+                            break;
+                    }
+                },
+                { signal: controller.signal },
+            );
+        }
+        statuses = buttons.map(button => {
+            const status = new ModuleStatus(button.querySelector("[data-module-status]"));
+            status.addEventListener("change", () => {
+                button.disabled = status.state.status !== "installed";
+            });
+            button.addEventListener("click", () => navigation.open(button.dataset.module), { signal: controller.signal });
+            return { button, status };
+        });
+        const probe = () => {
+            if (navigation.current) return;
+            for (const { button, status } of statuses) status.check(`/api/${encodeURIComponent(button.dataset.module)}`);
+        };
+        navigation.addEventListener("change", probe);
+        probe();
+        return destroy;
+    } catch (error) {
+        const display = !destroyed;
+        destroy();
+        if (display) {
+            const message = document.createElement("p");
+            message.className = "pp-host-error";
+            message.setAttribute("role", "alert");
+            message.textContent = `无法打开设置：${error.message}`;
+            document.body.prepend(message);
+        }
+        throw error;
+    }
+}
+
+export { startHome };
+
+await startHome();</script>
+  </body>
+</html>

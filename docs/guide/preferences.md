@@ -1,12 +1,12 @@
 # ⚙️ 偏好面板
 
-DualSubs 的[在线设置面板](https://dualsubs.github.io/settings/)用于配置已安装的插件、字幕与歌词处理方式及第三方 API，无需安装 BoxJs。面板由整个 DualSubs 项目共用，使用 [PreferencePanes 配置模板](https://github.com/NSNanoCat/PreferencePanes)。
+DualSubs 的[偏好面板](https://dualsubs.github.io/preferences/)用于配置已安装的插件、字幕与歌词处理方式及第三方 API，无需安装 BoxJs。面板由整个 DualSubs 项目共用，使用 [PreferencePanes 配置模板](https://github.com/NSNanoCat/PreferencePanes)。
 
 ## 进入设置页面
 
-1. 安装并启用最新版 [Universal](./universal#安装链接)。它提供共用设置面板的本机存储读写功能；使用 YouTube、Netflix 或 Spotify 时，还需安装对应插件。
+1. 安装并启用最新版 [Universal](./universal#安装链接)。它提供共用偏好面板的本机存储读写功能；使用 YouTube、Netflix 或 Spotify 时，还需安装对应插件。
 2. 在安装插件的设备上保持代理工具运行，确认模块／插件已启用、`dualsubs.github.io`的 HTTPS 解密生效。
-3. 点击官网导航栏的「设置面板」；手机上可先展开导航菜单。也可直接用浏览器打开 <https://dualsubs.github.io/settings/>。
+3. 点击官网导航栏的「偏好面板」；手机上可先展开导航菜单。也可直接用浏览器打开 <https://dualsubs.github.io/preferences/>。
 4. 选择显示版本号的入口进入面板。修改选项或输入内容后自动保存，无需额外点击保存按钮；重新进入面板可核对已保存的值。
 
 设置保存在当前代理工具的持久化存储中，与 BoxJs 共用原有设置。更换设备或代理工具后，设置不会自动同步。

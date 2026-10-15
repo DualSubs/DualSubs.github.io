@@ -4,12 +4,12 @@
   "scripts": {
     "preinstall": "npx -y only-allow pnpm",
     "dev": "rspress dev",
-    "build": "rspress build && node scripts/build-settings.mjs --stamp",
+    "build": "rspress build && node scripts/build-preferences.mjs --stamp",
     "preview": "rspress preview",
-    "settings:build": "node scripts/build-settings.mjs",
-    "settings:check": "node scripts/build-settings.mjs --check",
-    "settings:preview": "node scripts/preview-settings.mjs",
-    "settings:test": "node --test tests/settings.test.mjs"
+    "preferences:build": "node scripts/build-preferences.mjs",
+    "preferences:check": "node scripts/build-preferences.mjs --check",
+    "preferences:preview": "node scripts/preview-preferences.mjs",
+    "preferences:test": "node --test tests/preferences.test.mjs"
   },
   "dependencies": {
     "@nsnanocat/doc-ui": "^2.4.8",

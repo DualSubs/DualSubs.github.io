@@ -5,10 +5,10 @@ import vm from 'node:vm';
 
 // 预览真实发布产物；预览服务器逐文件加载通用资源、配置和固定存储 API。
 // Preview the real deployment artifacts by loading common resources, configuration and the fixed storage API per file.
-const publicDir = path.resolve(import.meta.dirname, process.env.SETTINGS_PUBLIC_DIR ?? '../docs/public');
+const publicDir = path.resolve(import.meta.dirname, process.env.PREFERENCES_PUBLIC_DIR ?? '../docs/public');
 const store = new Map();
-const channel = process.env.SETTINGS_CHANNEL ?? 'dev';
-if (!['formal', 'dev'].includes(channel)) throw new TypeError('SETTINGS_CHANNEL must be formal or dev');
+const channel = process.env.PREFERENCES_CHANNEL ?? 'dev';
+if (!['formal', 'dev'].includes(channel)) throw new TypeError('PREFERENCES_CHANNEL must be formal or dev');
 
 const execute = (script, request) =>
   new Promise((resolve) =>
@@ -69,7 +69,7 @@ const server = http.createServer(async (request, reply) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (url.pathname === '/') {
-      reply.writeHead(302, { Location: '/settings/' });
+      reply.writeHead(302, { Location: '/preferences/' });
       reply.end();
       return;
     }
@@ -91,7 +91,7 @@ const server = http.createServer(async (request, reply) => {
       return;
     }
     if (
-      (!url.pathname.startsWith('/settings/') && !url.pathname.startsWith('/static/font/')) ||
+      (!url.pathname.startsWith('/preferences/') && !url.pathname.startsWith('/static/font/')) ||
       !['GET', 'HEAD'].includes(request.method)
     ) {
       reply.writeHead(404);
@@ -130,5 +130,5 @@ const server = http.createServer(async (request, reply) => {
   }
 });
 server.listen(Number(process.env.PORT ?? 0), '127.0.0.1', () =>
-  console.log(`DualSubs settings: http://127.0.0.1:${server.address().port}/settings/`),
+  console.log(`DualSubs preferences: http://127.0.0.1:${server.address().port}/preferences/`),
 );

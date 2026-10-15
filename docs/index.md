@@ -18,8 +18,8 @@ hero:
           text: 支持平台列表
           link: /guide/appendix/supported-platforms
         - theme: alt
-          text: 设置面板
-          link: https://dualsubs.github.io/settings/
+          text: 偏好面板
+          link: https://dualsubs.github.io/preferences/
     image:
         src: https://avatars.githubusercontent.com/u/100578089?s=400&v=4
         alt: DualSubs Logo

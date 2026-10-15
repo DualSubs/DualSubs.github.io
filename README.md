@@ -1,17 +1,19 @@
-# DualSubs 本地设置
+# DualSubs 偏好面板
 
-同一份 PreferencePanes `home.html` 原样部署到 `/settings/index.html`。源码 `settings` 目录只提供固定路径的 `home.json` 和 `assets`，不维护项目首页 HTML、启动脚本、品牌 CSS 或 Bridge。JSON 定义品牌、分组、面板、图标与官网／组织／论坛入口。
+同一份 PreferencePanes `home.html` 原样部署到 `/preferences/index.html`。源码 `preferences` 目录只提供固定路径的 `home.json` 和 `assets`，不维护项目首页 HTML、启动脚本、品牌 CSS 或 Bridge。JSON 定义品牌、分组、面板、图标与官网／组织／论坛入口。
+
+使用说明位于 `/guide/preferences`。旧的 `/settings/` 和 `/guide/settings` 入口跳转到对应新地址，保留已发布插件和频道消息中的链接。
 
 官网入口声明 `target: "internal"`，在保留标题与返回的框架中显示；GitHub 组织和官方论坛声明 `target: "_blank"`，请求新窗口或标签，保留设置页。`_self` 可用于整页跳转，省略时保持原宿主行为。网页无法保证启动指定外部浏览器。
 
 首页内置程序、默认 CSS 与网页标题栏、返回、菜单、确认框和 Toast。固定读取 `./home.json` 后探测 `./theme.css`、`./bridge.mjs`；两者 HEAD 返回 404 时使用默认功能，不请求适配模块或客户端 SDK，不通过 UA 启用原生接入。返回 200 才加载，其它状态或加载失败明确报错。网格／列表、四／六／八列与居中版本由共用框架提供。
 
 ```sh
-pnpm settings:build
-pnpm settings:check
+pnpm preferences:build
+pnpm preferences:check
 pnpm build
-pnpm settings:test
-pnpm settings:preview
+pnpm preferences:test
+pnpm preferences:preview
 ```
 
 构建默认使用 PreferencePanes `v1.3.2` Release 的内联 `home.html`。验收未发布模板时，先构建 PreferencePanes，并为上述命令指定同一份本地文件：
@@ -22,7 +24,7 @@ export PREFERENCE_PANES_HOME=/Users/clyne/GitHub/NSNanoCat/PreferencePanes/dist/
 
 构建原样复制框架、JSON 和 JSON 引用的本地图片。模块设置直接挂载在首页同一文档，不输出模块 HTML 或页面 JS。预览标记、部署时间与提交号追加到生成 JSON 的 `footer`；预览与部署 HTML 与框架字节一致，不替换输入属性或标题。测试位于 `tests`，构建与预览沿用 `scripts`。
 
-先执行 `pnpm settings:build` 并构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。YouTube、Netflix、Spotify 的配置由各自仓库生成；预览这些面板还需构建对应仓库的 `build:dev-args`（正式通道使用 `build:args`）。缺少对应产物时返回 404，保持入口未启用。`file://` 无法提供模块页与 API。默认预览开发面板，`SETTINGS_CHANNEL=formal` 切换正式面板。预览直接使用站点构建的网页资源，仅模拟配置和存储 API。在线网页资源由 GitHub.io 提供；Universal 只拦截现有配置和固定存储 API，其余插件只拦截各自配置。
+先执行 `pnpm preferences:build` 并构建同级 Universal 与 NSNanoCat/PreferencePanes，再打开预览命令输出的 HTTP 地址。YouTube、Netflix、Spotify 的配置由各自仓库生成；预览这些面板还需构建对应仓库的 `build:dev-args`（正式通道使用 `build:args`）。缺少对应产物时返回 404，保持入口未启用。`file://` 无法提供模块页与 API。默认预览开发面板，`PREFERENCES_CHANNEL=formal` 切换正式面板。预览直接使用站点构建的网页资源，仅模拟配置和存储 API。在线网页资源由 GitHub.io 提供；Universal 只拦截现有配置和固定存储 API，其余插件只拦截各自配置。
 
 
 首页与设置页的默认 CSS 已合并为 PreferencePanes 的 `styles.css`，复用同一安装与清理逻辑，构建时随页面内置。默认 CSS 源码为一份；Biliverse 额外提供一份 `theme.css`，DualSubs 不提供品牌 CSS。
@@ -49,8 +51,8 @@ CSS 合并后重新通过框架 71 项及两站 6 项测试、框架类型检查
 
 ## 单文档设置框架（1.3.2）
 
-`settings/home.json` 定义入口；默认样式和网页能力均来自 PreferencePanes 内联 `home.html`。模块与字段子页使用首页同一文档，首页 HEAD 探测，点击入口才 GET 对应 API 配置。API 面板分别使用 API_Translate / API_External 配置地址，存储模块由字段 ID 推导。
+`preferences/home.json` 定义入口；默认样式和网页能力均来自 PreferencePanes 内联 `home.html`。模块与字段子页使用首页同一文档，首页 HEAD 探测，点击入口才 GET 对应 API 配置。API 面板分别使用 API_Translate / API_External 配置地址，存储模块由字段 ID 推导。
 
-构建固定使用 PreferencePanes 1.3.2，仅复制 home.html、JSON、实际提供的可选 theme.css / bridge.mjs 及 JSON 引用图片，不输出旧模块 HTML / JS。插件继续只携带 api.js 与配置 JSON。本地构建可用 PREFERENCE_PANES_HOME 指向框架产物；预览可用 SETTINGS_PUBLIC_DIR=../doc_build 读取部署产物。
+构建固定使用 PreferencePanes 1.3.2，仅复制 home.html、JSON、实际提供的可选 theme.css / bridge.mjs 及 JSON 引用图片，不输出旧模块 HTML / JS。插件继续只携带 api.js 与配置 JSON。本地构建可用 PREFERENCE_PANES_HOME 指向框架产物；预览可用 PREFERENCES_PUBLIC_DIR=../doc_build 读取部署产物。
 
-本地验收默认导航排版时，预览服务器同时提供 `doc_build/static/font` 中官网已构建的字体；设置页与官网共用同一路径，不复制字体到 `settings`，也不增加项目 CSS。请先完成官网构建；验收未发布框架时通过 `PREFERENCE_PANES_HOME` 选择本地产物。
+本地验收默认导航排版时，预览服务器同时提供 `doc_build/static/font` 中官网已构建的字体；设置页与官网共用同一路径，不复制字体到 `preferences`，也不增加项目 CSS。请先完成官网构建；验收未发布框架时通过 `PREFERENCE_PANES_HOME` 选择本地产物。

@@ -15,8 +15,8 @@ if (templateSource.startsWith('https://')) {
   template = Buffer.from(await response.arrayBuffer());
 } else template = await readFile(path.resolve(templateSource));
 if (template.toString().includes('__PREFERENCE_PANES_')) throw new Error('Expected a compiled PreferencePanes homepage');
-const outputs = new Map([['settings/index.html', template]]);
-const config = JSON.parse(await readFile(path.join(root, 'settings/home.json'), 'utf8'));
+const outputs = new Map([['preferences/index.html', template]]);
+const config = JSON.parse(await readFile(path.join(root, 'preferences/home.json'), 'utf8'));
 // 构建信息属于 JSON 页脚，不能改写共用 HTML。
 // Build information belongs to the JSON footer and must not rewrite the shared HTML.
 let label = '本地预览（未构建）';
@@ -26,28 +26,28 @@ if (stamp) {
   label = `构建于 ${builtAt.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' })} UTC+8 · ${revision}`;
 }
 config.footer = [...(config.footer ?? []), label];
-outputs.set('settings/home.json', Buffer.from(`${JSON.stringify(config, null, 2)}\n`));
+outputs.set('preferences/home.json', Buffer.from(`${JSON.stringify(config, null, 2)}\n`));
 for (const name of ['theme.css', 'bridge.mjs']) {
   try {
-    outputs.set(`settings/${name}`, await readFile(path.join(root, 'settings', name)));
+    outputs.set(`preferences/${name}`, await readFile(path.join(root, 'preferences', name)));
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
 }
-const jsonURL = new URL('https://settings.invalid/settings/home.json');
+const jsonURL = new URL('https://preferences.invalid/preferences/home.json');
 for (const source of [config.logo, ...config.sections.flatMap(section => section.items.map(item => item.icon.src))].filter(Boolean)) {
   const url = new URL(source, jsonURL);
   if (url.origin !== jsonURL.origin) continue;
   const name = path.posix.normalize(decodeURIComponent(url.pathname.slice(1)));
-  if (!name.startsWith('settings/assets/')) throw new Error(`Local homepage image must be inside settings/assets: ${source}`);
+  if (!name.startsWith('preferences/assets/')) throw new Error(`Local homepage image must be inside preferences/assets: ${source}`);
   outputs.set(name, await readFile(path.join(root, name)));
 }
-const targetRoot = path.join(root, stamp ? 'doc_build/settings' : 'docs/public/settings');
+const targetRoot = path.join(root, stamp ? 'doc_build/preferences' : 'docs/public/preferences');
 if (!check) await rm(targetRoot, { recursive: true, force: true });
 for (const [name, body] of outputs) {
   const target = path.join(root, stamp ? 'doc_build' : 'docs/public', name);
   if (check) {
-    if (!(await readFile(target)).equals(body)) throw new Error(`Stale settings asset: ${name}`);
+    if (!(await readFile(target)).equals(body)) throw new Error(`Stale preferences asset: ${name}`);
   } else {
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, body);
